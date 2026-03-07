@@ -34,7 +34,7 @@ const Students = () => {
     },
     {
       label: 'Edit',
-      onClick: (row) => alert(`Edit ${row.name}`),
+      onClick: (row) => navigate(`/edit-student/${row.id}`, { state: { student: row } }),
       className: 'bg-green-600 text-white hover:bg-green-700',
     },
   ];

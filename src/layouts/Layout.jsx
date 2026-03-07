@@ -1,8 +1,9 @@
 import React from 'react';
 import { useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import { Navbar, Sidebar } from '../components/Shared';
 
-const Layout = ({ children }) => {
+const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -11,7 +12,7 @@ const Layout = ({ children }) => {
       <div className="flex flex-1">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className="flex-1 p-6 overflow-auto bg-white">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>

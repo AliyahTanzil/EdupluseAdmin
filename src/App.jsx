@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './layouts/Layout';
+import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import Students from './pages/Students';
@@ -24,9 +25,13 @@ import './App.css'
 function App() {
   return (
     <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
+      <Routes>
+        {/* Landing page without layout */}
+        <Route path="/" element={<Landing />} />
+        
+        {/* All other routes with layout */}
+        <Route element={<Layout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/student-dashboard" element={<StudentDashboard />} />
           <Route path="/students" element={<Students />} />
           <Route path="/add-student" element={<AddNewStudent />} />
@@ -49,8 +54,8 @@ function App() {
           <Route path="/export-reports" element={<ExportReports />} />
           <Route path="/manage-devices" element={<ManageDevices />} />
           <Route path="/generate-report" element={<GenerateReport />} />
-        </Routes>
-      </Layout>
+        </Route>
+      </Routes>
     </Router>
   )
 }

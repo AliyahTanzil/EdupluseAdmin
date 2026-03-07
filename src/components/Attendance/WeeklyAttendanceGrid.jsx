@@ -23,30 +23,17 @@ const WeeklyAttendanceGrid = ({ className = '10-A', viewMode = 'week', currentMo
     { id: 5, name: 'Charlie Davis', photo: '👨', roll: '005' },
   ]);
 
-  // Create all possible day keys for attendance data (including month days)
-  const getAllPossibleDays = () => {
-    const allDays = [...allDaysOfWeek];
-    // Add all possible month days (1-31)
-    for (let i = 1; i <= 31; i++) {
-      const weekday = new Date(2024, 0, i).toLocaleDateString('en-US', { weekday: 'short' });
-      allDays.push(`${weekday} ${i}`);
-    }
-    return allDays;
-  };
-
-  // Sample attendance data
+  // Sample attendance data - generate based on index, not specific dates
   const [attendance, setAttendance] = useState(() => {
     const data = {};
-    const allPossibleDays = getAllPossibleDays();
     students.forEach(student => {
-      allPossibleDays.forEach(day => {
-        sessions.forEach(session => {
-          data[`${student.id}-${day}-${session}`] = {
-            status: Math.random() > 0.1 ? 'present' : 'absent',
-            hasGateScan: Math.random() > 0.3,
-          };
-        });
-      });
+      // Create 100 entries for various day/session combinations
+      for (let i = 0; i < 100; i++) {
+        data[`${student.id}-${i}`] = {
+          status: Math.random() > 0.1 ? 'present' : 'absent',
+          hasGateScan: Math.random() > 0.3,
+        };
+      }
     });
     return data;
   });
@@ -88,8 +75,8 @@ const WeeklyAttendanceGrid = ({ className = '10-A', viewMode = 'week', currentMo
 
   const weekRange = getWeekDateRange(currentWeek);
 
-  const handleCellChange = (studentId, day, session, newStatus) => {
-    const key = `${studentId}-${day}-${session}`;
+  const handleCellChange = (studentId, cellIndex, session, newStatus) => {
+    const key = `${studentId}-${cellIndex}`;
     setAttendance(prev => {
       // Ensure the key exists before updating
       if (!prev[key]) {
@@ -207,9 +194,10 @@ const WeeklyAttendanceGrid = ({ className = '10-A', viewMode = 'week', currentMo
                 </td>
 
                 {/* Attendance Cells */}
-                {daysToDisplay.map(day =>
-                  sessions.map(session => {
-                    const key = `${student.id}-${day}-${session}`;
+                {daysToDisplay.map((day, dayIndex) =>
+                  sessions.map((session, sessionIndex) => {
+                    const cellIndex = dayIndex * sessions.length + sessionIndex;
+                    const key = `${student.id}-${cellIndex}`;
                     const data = attendance[key] || { status: 'present', hasGateScan: false };
                     return (
                       <td
@@ -220,7 +208,7 @@ const WeeklyAttendanceGrid = ({ className = '10-A', viewMode = 'week', currentMo
                           status={data.status}
                           session={session}
                           hasGateScan={data.hasGateScan}
-                          onChange={(newStatus) => handleCellChange(student.id, day, session, newStatus)}
+                          onChange={(newStatus) => handleCellChange(student.id, cellIndex, session, newStatus)}
                         />
                       </td>
                     );

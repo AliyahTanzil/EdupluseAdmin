@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, Edit2, Trash2, Save } from 'lucide-react';
 const EditTimetable = () => {
   const navigate = useNavigate();
   const [isEditingPeriod, setIsEditingPeriod] = useState(false);
+  const [isAddingPeriod, setIsAddingPeriod] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState(null);
   const [periods, setPeriods] = useState([
     { id: 1, day: 'Monday', time: '9:00-10:00', subject: 'Math', teacher: 'Dr. Smith', room: '101' },
@@ -45,15 +46,25 @@ const EditTimetable = () => {
   };
 
   const handleAddNewPeriod = () => {
-    const newPeriod = {
-      id: Math.max(...periods.map(p => p.id), 0) + 1,
+    setEditData({
       day: 'Monday',
-      time: '3:00-4:00',
+      time: '',
       subject: 'Math',
       teacher: 'Dr. Smith',
       room: '101',
+    });
+    setSelectedPeriod(null);
+    setIsAddingPeriod(true);
+  };
+
+  const handleSaveNewPeriod = () => {
+    const newPeriod = {
+      id: Math.max(...periods.map(p => p.id), 0) + 1,
+      ...editData,
     };
     setPeriods([...periods, newPeriod]);
+    setIsAddingPeriod(false);
+    alert('Period added successfully!');
   };
 
   return (
@@ -124,11 +135,14 @@ const EditTimetable = () => {
         </div>
       </Card>
 
-      {/* Edit Modal */}
+      {/* Edit/Add Modal */}
       <Modal
-        isOpen={isEditingPeriod}
-        onClose={() => setIsEditingPeriod(false)}
-        title="Edit Period"
+        isOpen={isEditingPeriod || isAddingPeriod}
+        onClose={() => {
+          setIsEditingPeriod(false);
+          setIsAddingPeriod(false);
+        }}
+        title={isAddingPeriod ? "Add New Period" : "Edit Period"}
       >
         <div className="space-y-4">
           <div>
@@ -198,15 +212,18 @@ const EditTimetable = () => {
             <Button
               variant="primary"
               className="flex-1 flex items-center justify-center gap-2"
-              onClick={handleSavePeriod}
+              onClick={isAddingPeriod ? handleSaveNewPeriod : handleSavePeriod}
             >
               <Save size={18} />
-              Save Changes
+              {isAddingPeriod ? 'Add Period' : 'Save Changes'}
             </Button>
             <Button
               variant="secondary"
               className="flex-1"
-              onClick={() => setIsEditingPeriod(false)}
+              onClick={() => {
+                setIsEditingPeriod(false);
+                setIsAddingPeriod(false);
+              }}
             >
               Cancel
             </Button>
