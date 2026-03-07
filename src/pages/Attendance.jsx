@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import WeeklyAttendanceGrid from '../components/attendance/WeeklyAttendanceGrid';
+import WeeklyAttendanceGrid from '../components/Attendance/WeeklyAttendanceGrid';
 
 const Attendance = () => {
   const [selectedClass, setSelectedClass] = useState('10-A');

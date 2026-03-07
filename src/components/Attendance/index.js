@@ -1,1 +1,3 @@
-export { default as WeeklyAttendanceGrid } from './WeeklyAttendanceGrid';\nexport { default as AttendanceCell } from './AttendanceCell';\nexport { default as WeekSummary } from './WeekSummary';\n
+export { default as WeeklyAttendanceGrid } from './WeeklyAttendanceGrid';
+export { default as AttendanceCell } from './AttendanceCell';
+export { default as WeekSummary } from './WeekSummary';
