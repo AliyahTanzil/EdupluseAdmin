@@ -25,6 +25,11 @@ export const Sidebar = ({ isOpen, onClose }) => {
       path: '/',
     },
     {
+      label: 'Student Dashboard',
+      icon: Users,
+      path: '/student-dashboard',
+    },
+    {
       label: 'Students',
       icon: Users,
       path: '/students',
@@ -35,9 +40,9 @@ export const Sidebar = ({ isOpen, onClose }) => {
       path: '/teachers',
     },
     {
-      label: 'Courses',
+      label: 'Subjects',
       icon: BookOpen,
-      path: '/courses',
+      path: '/subjects',
     },
     {
       label: 'Timetable',
