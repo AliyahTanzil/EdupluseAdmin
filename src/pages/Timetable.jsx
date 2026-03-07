@@ -1,7 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '../components/Shared';
 
 const Timetable = () => {
+  const navigate = useNavigate();
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const periods = ['9:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-1:00', '1:00-2:00', '2:00-3:00'];
 
@@ -17,7 +19,7 @@ const Timetable = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Timetable</h1>
-        <Button variant="primary">Edit Timetable</Button>
+        <Button variant="primary" onClick={() => navigate('/edit-timetable')}>Edit Timetable</Button>
       </div>
       <Card elevation="lg">
         <div className="overflow-x-auto">

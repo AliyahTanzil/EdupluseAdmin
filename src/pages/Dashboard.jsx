@@ -1,8 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, StatCard, Button } from '../components/Shared';
 import { Users, UserCheck, BookOpen, CheckCircle } from 'lucide-react';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const stats = [
     { 
       title: 'Total Students', 
@@ -67,13 +69,13 @@ const Dashboard = () => {
         <Card elevation="lg">
           <h2 className="text-xl font-semibold mb-4 text-gray-900">Quick Actions</h2>
           <div className="space-y-3">
-            <Button variant="primary" fullWidth>
+            <Button variant="primary" fullWidth onClick={() => navigate('/add-student')}>
               Add New Student
             </Button>
-            <Button variant="success" fullWidth>
+            <Button variant="success" fullWidth onClick={() => navigate('/generate-report')}>
               Generate Report
             </Button>
-            <Button variant="outline" fullWidth>
+            <Button variant="outline" fullWidth onClick={() => navigate('/edit-timetable')}>
               Manage Timetable
             </Button>
           </div>

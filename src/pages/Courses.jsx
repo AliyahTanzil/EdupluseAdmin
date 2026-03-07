@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, Button, Card } from '../components/Shared';
 import { Plus } from 'lucide-react';
 
 const Courses = () => {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([
     { id: 1, name: 'Mathematics', code: 'MATH101', teacher: 'Dr. Smith', students: 45, duration: '1 year' },
     { id: 2, name: 'English Literature', code: 'ENG201', teacher: 'Ms. Johnson', students: 38, duration: '1 year' },
@@ -34,7 +36,11 @@ const Courses = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Courses</h1>
-        <Button variant="primary" className="flex items-center gap-2">
+        <Button 
+          variant="primary" 
+          className="flex items-center gap-2"
+          onClick={() => navigate('/add-course')}
+        >
           <Plus size={18} />
           Add New Course
         </Button>

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, Button, Card, Modal } from '../components/Shared';
 import { Plus, CheckCircle, Calendar, TrendingUp, AlertCircle } from 'lucide-react';
 
 const Teachers = () => {
+  const navigate = useNavigate();
   const [teachers, setTeachers] = useState([
     { 
       id: 1, 
@@ -179,7 +181,7 @@ const Teachers = () => {
           <h1 className="text-3xl font-bold text-gray-800">Teachers Management</h1>
           <p className="text-gray-600 mt-2">Track teacher attendance and performance</p>
         </div>
-        <Button variant="primary" className="flex items-center gap-2">
+        <Button variant="primary" className="flex items-center gap-2" onClick={() => navigate('/add-teacher')}>
           <Plus size={18} />
           Add New Teacher
         </Button>

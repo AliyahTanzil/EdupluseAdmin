@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import WeeklyAttendanceGrid from '../components/Attendance/WeeklyAttendanceGrid';
 
 const Attendance = () => {
+  const navigate = useNavigate();
   const [selectedClass, setSelectedClass] = useState('10-A');
   const [currentWeek, setCurrentWeek] = useState('Jan 22 - Jan 26, 2024');
 
@@ -21,7 +23,10 @@ const Attendance = () => {
               <option key={cls} value={cls}>{cls}</option>
             ))}
           </select>
-          <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+          <button 
+            onClick={() => navigate('/export-reports')}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
             Export Report
           </button>
         </div>
@@ -78,7 +83,7 @@ const Attendance = () => {
               <span className="text-yellow-600">Offline</span>
             </div>
           </div>
-          <button className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+          <button className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" onClick={() => navigate('/manage-devices')}>
             Manage Devices
           </button>
         </div>
@@ -86,13 +91,22 @@ const Attendance = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
           <div className="space-y-2">
-            <button className="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">
+            <button 
+              onClick={() => navigate('/mark-attendance')}
+              className="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
+            >
               Mark Morning Attendance
             </button>
-            <button className="w-full bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600">
+            <button 
+              onClick={() => navigate('/mark-attendance')}
+              className="w-full bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600"
+            >
               Mark Afternoon Attendance
             </button>
-            <button className="w-full bg-purple-500 text-white py-2 px-4 rounded hover:bg-purple-600">
+            <button 
+              onClick={() => alert('SMS notifications feature coming soon')}
+              className="w-full bg-purple-500 text-white py-2 px-4 rounded hover:bg-purple-600"
+            >
               Send SMS Notifications
             </button>
           </div>

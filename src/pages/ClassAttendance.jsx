@@ -62,11 +62,11 @@ const ClassAttendance = () => {
             <p className="text-gray-600 mt-2">Class Teacher: <span className="font-semibold">{currentClass.teacher}</span></p>
           </div>
           <div className="flex gap-3">
-            <Button variant="secondary" className="flex items-center gap-2">
+            <Button variant="secondary" className="flex items-center gap-2" onClick={() => navigate('/export-reports')}>
               <Download size={18} />
               Export Report
             </Button>
-            <Button variant="primary" className="flex items-center gap-2">
+            <Button variant="primary" className="flex items-center gap-2" onClick={() => navigate(`/class/${classId}/mark-attendance`)}>
               <Plus size={18} />
               Mark Attendance
             </Button>

@@ -82,11 +82,6 @@ const StudentDashboard = () => {
     }
   };
 
-  const handleNavigateClass = (classId) => {
-    // Navigate to class details or attendance
-    navigate(`/class/${classId}`);
-  };
-
   return (
     <div>
       <div className="mb-8">
@@ -160,8 +155,7 @@ const StudentDashboard = () => {
           {classes.map((classItem) => (
             <Card 
               key={classItem.id}
-              className="hover:shadow-xl transition-shadow duration-300 overflow-hidden cursor-pointer"
-              onClick={() => handleNavigateClass(classItem.id)}
+              className="hover:shadow-xl transition-shadow duration-300 overflow-hidden"
             >
               <div className={`h-32 bg-gradient-to-r ${classItem.color} p-6 text-white flex flex-col justify-between`}>
                 <div className="flex justify-between items-start">
