@@ -177,11 +177,11 @@ const GenerateReport = () => {
 
           {/* Action Buttons */}
           <div className="flex gap-4">
-            <Button variant="primary" className="flex-1 flex items-center justify-center gap-2">
+            <Button variant="primary" className="flex-1 flex items-center justify-center gap-2" onClick={() => alert('Report generated! Download started...')}>
               <Download size={18} />
               Generate Report
             </Button>
-            <Button variant="secondary" className="flex-1">
+            <Button variant="secondary" className="flex-1" onClick={() => alert('Preview: ' + reportType + ' Report')}>
               Preview
             </Button>
           </div>
@@ -199,7 +199,7 @@ const GenerateReport = () => {
                   <p className="font-semibold text-gray-800">Attendance Report - January 2024</p>
                   <p className="text-sm text-gray-600">Generated on Jan 31, 2024</p>
                 </div>
-                <Button variant="secondary" className="text-sm py-2">
+                <Button variant="secondary" className="text-sm py-2" onClick={() => alert('Report downloaded successfully!')}>
                   Download
                 </Button>
               </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button } from '../components/Shared';
-import { ArrowLeft, Download, Printer, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Download, Printer, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import WeeklyAttendanceGrid from '../components/Attendance/WeeklyAttendanceGrid';
 
 const MarkAttendance = () => {
@@ -20,6 +20,32 @@ const MarkAttendance = () => {
 
   const currentClass = classData[classId] || { name: 'Class', teacher: 'Unknown', students: 0 };
   const [currentWeek, setCurrentWeek] = useState('Jan 22 - Jan 26, 2024');
+  const [viewMode, setViewMode] = useState('week'); // 'week' or 'month'
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const handlePrevious = () => {
+    if (viewMode === 'week') {
+      // Previous week logic
+      setCurrentWeek('Jan 15 - Jan 19, 2024');
+    } else {
+      // Previous month
+      setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+    }
+  };
+
+  const handleNext = () => {
+    if (viewMode === 'week') {
+      // Next week logic
+      setCurrentWeek('Jan 29 - Feb 02, 2024');
+    } else {
+      // Next month
+      setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+    }
+  };
+
+  const getMonthName = (date) => {
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
 
   return (
     <div>
@@ -42,32 +68,53 @@ const MarkAttendance = () => {
           <p className="text-gray-600 mt-1">Total Students: <span className="font-semibold">{currentClass.students}</span></p>
         </div>
         <div className="flex gap-3">
-          <Button variant="secondary" className="flex items-center gap-2">
+          <Button variant="secondary" className="flex items-center gap-2" onClick={() => alert('Exporting attendance data...')}>
             <Download size={18} />
             Export
           </Button>
-          <Button variant="secondary" className="flex items-center gap-2">
+          <Button variant="secondary" className="flex items-center gap-2" onClick={() => alert('Opening print dialog...')}>
             <Printer size={18} />
             Print
           </Button>
         </div>
       </div>
 
-      {/* Week Navigation */}
+      {/* View Mode Toggle */}
       <Card className="mb-6">
-        <div className="p-4 flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Weekly Attendance Grid - {currentClass.name}</h2>
-          <div className="flex space-x-2">
+        <div className="p-4 flex justify-between items-center flex-wrap gap-4">
+          <div className="flex gap-2">
+            <Button 
+              variant={viewMode === 'week' ? 'primary' : 'secondary'}
+              className="flex items-center gap-2"
+              onClick={() => setViewMode('week')}
+            >
+              <Calendar size={18} />
+              Weekly View
+            </Button>
+            <Button 
+              variant={viewMode === 'month' ? 'primary' : 'secondary'}
+              className="flex items-center gap-2"
+              onClick={() => setViewMode('month')}
+            >
+              <Calendar size={18} />
+              Monthly View
+            </Button>
+          </div>
+          
+          {/* Navigation */}
+          <div className="flex items-center space-x-2">
             <button 
-              onClick={() => setCurrentWeek('Jan 15 - Jan 19, 2024')}
-              className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+              onClick={handlePrevious}
+              className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded">{currentWeek}</span>
+            <span className="px-4 py-2 bg-blue-100 text-blue-800 rounded font-semibold min-w-max">
+              {viewMode === 'week' ? currentWeek : getMonthName(currentMonth)}
+            </span>
             <button 
-              onClick={() => setCurrentWeek('Jan 29 - Feb 02, 2024')}
-              className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+              onClick={handleNext}
+              className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
             >
               <ChevronRight size={16} />
             </button>
@@ -78,7 +125,11 @@ const MarkAttendance = () => {
       {/* Attendance Grid */}
       <Card className="mb-6">
         <div className="p-6">
-          <WeeklyAttendanceGrid className={currentClass.name} />
+          <WeeklyAttendanceGrid 
+            className={currentClass.name}
+            viewMode={viewMode}
+            currentMonth={currentMonth}
+          />
         </div>
       </Card>
 
@@ -86,7 +137,7 @@ const MarkAttendance = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <div className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Today's Summary</h3>
+            <h3 className="text-lg font-semibold mb-4">{viewMode === 'week' ? "Today's" : "Month's"} Summary</h3>
             <div className="space-y-3">
               <div className="flex justify-between pb-2 border-b">
                 <span className="text-gray-600">Total Students:</span>
@@ -129,7 +180,7 @@ const MarkAttendance = () => {
                 <span className="text-green-600 font-semibold">Online</span>
               </div>
             </div>
-            <Button variant="secondary" fullWidth className="mt-4">
+            <Button variant="secondary" fullWidth className="mt-4" onClick={() => navigate('/manage-devices')}>
               Manage Devices
             </Button>
           </div>
@@ -139,13 +190,13 @@ const MarkAttendance = () => {
           <div className="p-6">
             <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
             <div className="space-y-2">
-              <Button variant="success" fullWidth>
+              <Button variant="success" fullWidth onClick={() => alert('Morning attendance marked successfully!')}>
                 Mark Morning Attendance
               </Button>
-              <Button variant="warning" fullWidth>
+              <Button variant="warning" fullWidth onClick={() => alert('Afternoon attendance marked successfully!')}>
                 Mark Afternoon Attendance
               </Button>
-              <Button variant="secondary" fullWidth>
+              <Button variant="secondary" fullWidth onClick={() => alert('SMS notifications sent to all guardians!')}>
                 Send SMS Notifications
               </Button>
             </div>

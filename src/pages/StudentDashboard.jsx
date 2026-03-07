@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button, Modal } from '../components/Shared';
-import { Plus, Users, BookOpen, Clock } from 'lucide-react';
+import { Plus, Users, BookOpen, Clock, CheckSquare, Calendar, Book } from 'lucide-react';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -182,31 +182,36 @@ const StudentDashboard = () => {
                   </div>
                 </div>
 
-                <div className="mt-6 grid grid-cols-3 gap-2">
-                  <Button 
-                    variant="secondary" 
-                    className="text-xs py-2"
-                    title="View Attendance"
-                    onClick={() => navigate(`/class/${classItem.id}/attendance`)}
-                  >
-                    📋 Attendance
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    className="text-xs py-2"
-                    title="View Timetable"
-                    onClick={() => navigate(`/class/${classItem.id}/timetable`)}
-                  >
-                    🕐 Timetable
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    className="text-xs py-2"
-                    title="View Subjects"
-                    onClick={() => navigate(`/class/${classItem.id}/subjects`)}
-                  >
-                    📚 Subjects
-                  </Button>
+                <div className="mt-6 -mx-6 px-0">
+                  <div className="grid grid-cols-3 gap-4">
+                    <Button 
+                      variant="secondary" 
+                      className="text-[8px] py-0 px-0 flex flex-col items-center justify-center gap-3 hover:bg-blue-100 transition-colors w-full aspect-square rounded-xl"
+                      title="View Attendance"
+                      onClick={() => navigate(`/class/${classItem.id}/attendance`)}
+                    >
+                      <CheckSquare size={32} className="text-blue-600" />
+                      <span className="font-extrabold whitespace-nowrap">Attendance</span>
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      className="text-[8px] py-0 px-0 flex flex-col items-center justify-center gap-3 hover:bg-purple-100 transition-colors w-full aspect-square rounded-xl"
+                      title="View Timetable"
+                      onClick={() => navigate(`/class/${classItem.id}/timetable`)}
+                    >
+                      <Calendar size={32} className="text-purple-600" />
+                      <span className="font-extrabold whitespace-nowrap">Timetable</span>
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      className="text-[8px] py-0 px-0 flex flex-col items-center justify-center gap-3 hover:bg-green-100 transition-colors w-full aspect-square rounded-xl"
+                      title="View Subjects"
+                      onClick={() => navigate(`/class/${classItem.id}/subjects`)}
+                    >
+                      <Book size={32} className="text-green-600" />
+                      <span className="font-extrabold whitespace-nowrap">Subjects</span>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Card>

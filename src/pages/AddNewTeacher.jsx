@@ -120,7 +120,7 @@ const AddNewTeacher = () => {
                     <td className="py-3 px-4 text-gray-600">{teacher.phone}</td>
                     <td className="py-3 px-4 text-gray-600">{teacher.experience} years</td>
                     <td className="py-3 px-4 text-center space-x-2">
-                      <button className="text-blue-600 hover:text-blue-800 inline-block">
+                      <button onClick={() => alert(`Edit ${teacher.name}`)} className="text-blue-600 hover:text-blue-800 inline-block">
                         <Edit2 size={18} />
                       </button>
                       <button

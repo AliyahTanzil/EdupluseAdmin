@@ -106,7 +106,7 @@ const ClassTimetable = () => {
             <h1 className="text-4xl font-bold text-gray-800">{currentClass.name} - Timetable</h1>
             <p className="text-gray-600 mt-2">Class Teacher: <span className="font-semibold">{currentClass.teacher}</span></p>
           </div>
-          <Button variant="primary" className="flex items-center gap-2">
+          <Button variant="primary" className="flex items-center gap-2" onClick={() => alert('Add Class feature coming soon')}>
             <Plus size={18} />
             Add Class
           </Button>
@@ -140,11 +140,11 @@ const ClassTimetable = () => {
                     </div>
                     
                     <div className="flex gap-2 mt-3 pt-3 border-t">
-                      <button className="text-blue-600 hover:text-blue-800 text-xs flex-1">
+                      <button onClick={() => alert(`Edit ${period.subject} class`)} className="text-blue-600 hover:text-blue-800 text-xs flex-1">
                         <Edit2 size={14} className="inline mr-1" />
                         Edit
                       </button>
-                      <button className="text-red-600 hover:text-red-800 text-xs flex-1">
+                      <button onClick={() => alert(`Delete ${period.subject} class`)} className="text-red-600 hover:text-red-800 text-xs flex-1">
                         <Trash2 size={14} className="inline mr-1" />
                         Delete
                       </button>

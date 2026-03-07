@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Download, Printer } from 'lucide-react';
 import { Button } from '../Shared';
 import AttendanceCell from './AttendanceCell';
@@ -7,10 +7,11 @@ import WeekSummary from './WeekSummary';
 /**
  * WeeklyAttendanceGrid Component
  * Displays attendance records in a beautiful grid format
- * Features: Entry/Exit marking, real-time updates, keyboard navigation
+ * Features: Weekly and Monthly views, Entry/Exit marking, real-time updates
  */
-const WeeklyAttendanceGrid = ({ className = '10-A' }) => {
-  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const WeeklyAttendanceGrid = ({ className = '10-A', viewMode = 'week', currentMonth = new Date() }) => {
+  // All days including weekends
+  const allDaysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const sessions = ['Morning', 'Afternoon'];
 
   // Sample student data
@@ -22,11 +23,23 @@ const WeeklyAttendanceGrid = ({ className = '10-A' }) => {
     { id: 5, name: 'Charlie Davis', photo: '👨', roll: '005' },
   ]);
 
+  // Create all possible day keys for attendance data (including month days)
+  const getAllPossibleDays = () => {
+    const allDays = [...allDaysOfWeek];
+    // Add all possible month days (1-31)
+    for (let i = 1; i <= 31; i++) {
+      const weekday = new Date(2024, 0, i).toLocaleDateString('en-US', { weekday: 'short' });
+      allDays.push(`${weekday} ${i}`);
+    }
+    return allDays;
+  };
+
   // Sample attendance data
   const [attendance, setAttendance] = useState(() => {
     const data = {};
+    const allPossibleDays = getAllPossibleDays();
     students.forEach(student => {
-      daysOfWeek.forEach(day => {
+      allPossibleDays.forEach(day => {
         sessions.forEach(session => {
           data[`${student.id}-${day}-${session}`] = {
             status: Math.random() > 0.1 ? 'present' : 'absent',
@@ -40,6 +53,26 @@ const WeeklyAttendanceGrid = ({ className = '10-A' }) => {
 
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [unsavedChanges, setUnsavedChanges] = useState(0);
+
+  // Get days to display based on view mode - properly memoized
+  const daysToDisplay = useMemo(() => {
+    if (viewMode === 'week') {
+      return allDaysOfWeek;
+    } else {
+      // Monthly view - get all days of the month
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      const days = [];
+      for (let i = 1; i <= daysInMonth; i++) {
+        const date = new Date(year, month, i);
+        const dayName = date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+        days.push(dayName);
+      }
+      return days;
+    }
+  }, [viewMode, currentMonth, allDaysOfWeek]);
 
   const getWeekDateRange = (date) => {
     const curr = new Date(date);
@@ -57,10 +90,16 @@ const WeeklyAttendanceGrid = ({ className = '10-A' }) => {
 
   const handleCellChange = (studentId, day, session, newStatus) => {
     const key = `${studentId}-${day}-${session}`;
-    setAttendance(prev => ({
-      ...prev,
-      [key]: { ...prev[key], status: newStatus }
-    }));
+    setAttendance(prev => {
+      // Ensure the key exists before updating
+      if (!prev[key]) {
+        prev[key] = { status: 'present', hasGateScan: false };
+      }
+      return {
+        ...prev,
+        [key]: { ...prev[key], status: newStatus }
+      };
+    });
     setUnsavedChanges(prev => prev + 1);
   };
 
@@ -89,7 +128,7 @@ const WeeklyAttendanceGrid = ({ className = '10-A' }) => {
             <ChevronLeft size={16} />
           </Button>
           <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium">
-            {weekRange.start} - {weekRange.end}
+            {viewMode === 'week' ? `${weekRange.start} - ${weekRange.end}` : currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </span>
           <Button
             variant="secondary"
@@ -124,7 +163,7 @@ const WeeklyAttendanceGrid = ({ className = '10-A' }) => {
               </th>
 
               {/* Day Headers */}
-              {daysOfWeek.map(day => (
+              {daysToDisplay.map(day => (
                 <th
                   key={day}
                   colSpan={2}
@@ -140,7 +179,7 @@ const WeeklyAttendanceGrid = ({ className = '10-A' }) => {
 
               {/* Summary Column */}
               <th className="sticky right-0 z-10 bg-gray-50 px-4 py-3 text-center font-semibold text-gray-900 border-l border-gray-200 min-w-24">
-                Week %
+                {viewMode === 'week' ? 'Week %' : 'Month %'}
               </th>
             </tr>
           </thead>
@@ -168,10 +207,10 @@ const WeeklyAttendanceGrid = ({ className = '10-A' }) => {
                 </td>
 
                 {/* Attendance Cells */}
-                {daysOfWeek.map(day =>
+                {daysToDisplay.map(day =>
                   sessions.map(session => {
                     const key = `${student.id}-${day}-${session}`;
-                    const data = attendance[key];
+                    const data = attendance[key] || { status: 'present', hasGateScan: false };
                     return (
                       <td
                         key={key}
@@ -188,12 +227,12 @@ const WeeklyAttendanceGrid = ({ className = '10-A' }) => {
                   })
                 )}
 
-                {/* Week Summary */}
+                {/* Week/Month Summary */}
                 <td className="sticky right-0 z-10 px-4 py-3 text-center border-l border-gray-200 bg-inherit">
                   <WeekSummary
                     attendance={attendance}
                     studentId={student.id}
-                    daysOfWeek={daysOfWeek}
+                    daysOfWeek={daysToDisplay}
                     sessions={sessions}
                   />
                 </td>

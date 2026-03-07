@@ -154,11 +154,11 @@ const ExportReports = () => {
 
           {/* Action Buttons */}
           <div className="flex gap-4">
-            <Button variant="primary" className="flex-1 flex items-center justify-center gap-2">
+            <Button variant="primary" className="flex-1 flex items-center justify-center gap-2" onClick={() => alert('Report downloaded successfully!')}>
               <Download size={18} />
               Download Report
             </Button>
-            <Button variant="secondary" className="flex-1">
+            <Button variant="secondary" className="flex-1" onClick={() => alert('Preview: ' + selectedReport + ' Report')}>
               Preview
             </Button>
           </div>
