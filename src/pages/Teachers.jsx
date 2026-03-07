@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import Table from '../components/Table';
+import { Table, Button, Card } from '../components/Shared';
+import { Plus } from 'lucide-react';
 
 const Teachers = () => {
   const [teachers, setTeachers] = useState([
@@ -9,23 +10,34 @@ const Teachers = () => {
   ]);
 
   const columns = [
-    { header: 'Name', accessor: 'name' },
-    { header: 'Subject', accessor: 'subject' },
-    { header: 'Classes', accessor: 'classes' },
-    { header: 'Status', accessor: 'status' },
+    { key: 'name', label: 'Name' },
+    { key: 'subject', label: 'Subject' },
+    { key: 'classes', label: 'Classes' },
+    { 
+      key: 'status', 
+      label: 'Status',
+      render: (value) => (
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+          value === 'Active' 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-yellow-100 text-yellow-800'
+        }`}>
+          {value}
+        </span>
+      )
+    },
+  ];
+
+  const actions = [
     {
-      header: 'Actions',
-      accessor: 'actions',
-      render: (row) => (
-        <div className="space-x-2">
-          <button className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
-            View Profile
-          </button>
-          <button className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">
-            Edit
-          </button>
-        </div>
-      ),
+      label: 'View',
+      onClick: (row) => alert(`View ${row.name}`),
+      className: 'bg-blue-600 text-white hover:bg-blue-700',
+    },
+    {
+      label: 'Edit',
+      onClick: (row) => alert(`Edit ${row.name}`),
+      className: 'bg-green-600 text-white hover:bg-green-700',
     },
   ];
 
@@ -33,13 +45,14 @@ const Teachers = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Teachers</h1>
-        <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        <Button variant="primary" className="flex items-center gap-2">
+          <Plus size={18} />
           Add New Teacher
-        </button>
+        </Button>
       </div>
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <Table data={teachers} columns={columns} />
-      </div>
+      <Card>
+        <Table data={teachers} columns={columns} actions={actions} />
+      </Card>
     </div>
   );
 };

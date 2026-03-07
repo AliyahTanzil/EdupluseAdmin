@@ -5,6 +5,7 @@ import Students from './pages/Students';
 import Teachers from './pages/Teachers';
 import Courses from './pages/Courses';
 import Timetable from './pages/Timetable';
+import Attendance from './pages/Attendance';
 import './App.css'
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
           <Route path="/teachers" element={<Teachers />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/timetable" element={<Timetable />} />
+          <Route path="/attendance" element={<Attendance />} />
         </Routes>
       </Layout>
     </Router>

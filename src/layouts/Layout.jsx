@@ -1,14 +1,16 @@
 import React from 'react';
-import Navbar from '../components/Navbar';
-import Sidebar from '../components/Sidebar';
+import { useState } from 'react';
+import { Navbar, Sidebar } from '../components/Shared';
 
 const Layout = ({ children }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <Navbar />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 p-6">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-blue-50">
+      <Navbar onMenuToggle={() => setSidebarOpen((s) => !s)} />
+      <div className="flex flex-1">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <main className="flex-1 p-6 overflow-auto bg-white">
           {children}
         </main>
       </div>

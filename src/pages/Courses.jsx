@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import Table from '../components/Table';
+import { Table, Button, Card } from '../components/Shared';
+import { Plus } from 'lucide-react';
 
 const Courses = () => {
   const [courses, setCourses] = useState([
@@ -9,24 +10,23 @@ const Courses = () => {
   ]);
 
   const columns = [
-    { header: 'Course Name', accessor: 'name' },
-    { header: 'Code', accessor: 'code' },
-    { header: 'Teacher', accessor: 'teacher' },
-    { header: 'Enrolled Students', accessor: 'students' },
-    { header: 'Duration', accessor: 'duration' },
+    { key: 'name', label: 'Course Name' },
+    { key: 'code', label: 'Code' },
+    { key: 'teacher', label: 'Teacher' },
+    { key: 'students', label: 'Enrolled Students' },
+    { key: 'duration', label: 'Duration' },
+  ];
+
+  const actions = [
     {
-      header: 'Actions',
-      accessor: 'actions',
-      render: (row) => (
-        <div className="space-x-2">
-          <button className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
-            View Details
-          </button>
-          <button className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">
-            Edit
-          </button>
-        </div>
-      ),
+      label: 'View',
+      onClick: (row) => alert(`View ${row.name}`),
+      className: 'bg-blue-600 text-white hover:bg-blue-700',
+    },
+    {
+      label: 'Edit',
+      onClick: (row) => alert(`Edit ${row.name}`),
+      className: 'bg-green-600 text-white hover:bg-green-700',
     },
   ];
 
@@ -34,13 +34,14 @@ const Courses = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Courses</h1>
-        <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        <Button variant="primary" className="flex items-center gap-2">
+          <Plus size={18} />
           Add New Course
-        </button>
+        </Button>
       </div>
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <Table data={courses} columns={columns} />
-      </div>
+      <Card>
+        <Table data={courses} columns={columns} actions={actions} />
+      </Card>
     </div>
   );
 };
