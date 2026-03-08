@@ -1,12 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button } from '../components/Shared';
-import { ArrowLeft, Download, FileText, PieChart, BarChart3, TrendingUp } from 'lucide-react';
+import { Card, Button, LoadingSpinner, ErrorAlert } from '../components/Shared';
+import { ArrowLeft, Download, FileText, PieChart, BarChart3, TrendingUp, Loader } from 'lucide-react';
+import { reportsAPI, classesAPI } from '../services/api';
+import SuccessAlert from '../components/Shared/SuccessAlert';
 
 const ExportReports = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
   const [selectedReport, setSelectedReport] = useState('attendance');
-  const [dateRange, setDateRange] = useState({ start: '2024-01-01', end: '2024-01-31' });
+  const [classes, setClasses] = useState([]);
+  const [selectedClass, setSelectedClass] = useState('all');
+  const [dateRange, setDateRange] = useState({
+    start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
+  const [exportOptions, setExportOptions] = useState({
+    includeBreakdown: true,
+    includeCharts: true,
+    sendEmail: false,
+  });
+
+  useEffect(() => {
+    loadClasses();
+  }, []);
+
+  const loadClasses = async () => {
+    try {
+      const response = await classesAPI.getAll({ limit: 100, offset: 0 });
+      if (response.success) {
+        setClasses(response.data || []);
+      } else {
+        setError(response.message || 'Failed to load classes');
+      }
+    } catch (err) {
+      console.error('Error loading classes:', err);
+    }
+  };
 
   const reports = [
     {
@@ -39,12 +73,58 @@ const ExportReports = () => {
     },
   ];
 
-  const handleExport = (format) => {
-    alert(`Exporting ${selectedReport} report as ${format.toUpperCase()}`);
+  const handleExport = async (format) => {
+    try {
+      setExporting(true);
+      setError(null);
+
+      // Validate date range
+      if (new Date(dateRange.start) > new Date(dateRange.end)) {
+        setError('Start date must be before end date');
+        setExporting(false);
+        return;
+      }
+
+      const payload = {
+        type: selectedReport,
+        format: format.toLowerCase(),
+        dateFrom: dateRange.start,
+        dateTo: dateRange.end,
+        classId: selectedClass === 'all' ? null : parseInt(selectedClass),
+        includeBreakdown: exportOptions.includeBreakdown,
+        includeCharts: exportOptions.includeCharts,
+        sendEmail: exportOptions.sendEmail,
+      };
+
+      const response = await reportsAPI.export(payload);
+
+      if (response.success) {
+        setSuccess(true);
+        // Trigger download
+        if (response.downloadUrl) {
+          const link = document.createElement('a');
+          link.href = response.downloadUrl;
+          link.download = `${selectedReport}-export.${format.toLowerCase()}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+        setTimeout(() => setSuccess(false), 3000);
+      } else {
+        setError(response.message || 'Failed to export report');
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred while exporting report');
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
     <div>
+      {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
+      {success && <SuccessAlert message="Report exported successfully!" onClose={() => {}} />}
+
       <div className="flex items-center gap-4 mb-8">
         <button
           onClick={() => navigate(-1)}
@@ -57,7 +137,7 @@ const ExportReports = () => {
 
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-800 mb-2">Export Reports</h1>
-        <p className="text-gray-600">Generate and download various reports in multiple formats</p>
+        <p className="text-gray-600">Generate and download reports in multiple formats</p>
       </div>
 
       {/* Report Selection */}
@@ -103,7 +183,7 @@ const ExportReports = () => {
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -112,10 +192,25 @@ const ExportReports = () => {
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
+          </div>
+
+          {/* Class Selection */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-gray-800 mb-4">Select Class</h3>
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Classes</option>
+              {classes.map(cls => (
+                <option key={cls.id} value={cls.id}>{cls.name}</option>
+              ))}
+            </select>
           </div>
 
           {/* Format Selection */}
@@ -125,42 +220,60 @@ const ExportReports = () => {
               {['PDF', 'Excel', 'CSV', 'JSON'].map((format) => (
                 <Button
                   key={format}
-                  variant="secondary"
+                  variant={format === 'PDF' ? 'primary' : 'secondary'}
                   fullWidth
-                  className="py-3"
+                  className="py-3 flex items-center justify-center gap-2"
                   onClick={() => handleExport(format)}
+                  disabled={exporting}
                 >
-                  {format}
+                  {exporting ? (
+                    <>
+                      <Loader size={16} className="animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} />
+                      {format}
+                    </>
+                  )}
                 </Button>
               ))}
             </div>
           </div>
 
           {/* Additional Options */}
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" defaultChecked className="w-4 h-4" />
-              <span className="text-gray-700">Include detailed breakdown</span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer mt-2">
-              <input type="checkbox" defaultChecked className="w-4 h-4" />
-              <span className="text-gray-700">Include charts and graphs</span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer mt-2">
-              <input type="checkbox" className="w-4 h-4" />
-              <span className="text-gray-700">Send to email</span>
-            </label>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-4">
-            <Button variant="primary" className="flex-1 flex items-center justify-center gap-2" onClick={() => alert('Report downloaded successfully!')}>
-              <Download size={18} />
-              Download Report
-            </Button>
-            <Button variant="secondary" className="flex-1" onClick={() => alert('Preview: ' + selectedReport + ' Report')}>
-              Preview
-            </Button>
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h3 className="font-semibold text-gray-800 mb-4">Additional Options</h3>
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={exportOptions.includeBreakdown}
+                  onChange={(e) => setExportOptions({ ...exportOptions, includeBreakdown: e.target.checked })}
+                  className="w-4 h-4 rounded"
+                />
+                <span className="text-gray-700">Include detailed breakdown</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={exportOptions.includeCharts}
+                  onChange={(e) => setExportOptions({ ...exportOptions, includeCharts: e.target.checked })}
+                  className="w-4 h-4 rounded"
+                />
+                <span className="text-gray-700">Include charts and graphs</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={exportOptions.sendEmail}
+                  onChange={(e) => setExportOptions({ ...exportOptions, sendEmail: e.target.checked })}
+                  className="w-4 h-4 rounded"
+                />
+                <span className="text-gray-700">Send to email</span>
+              </label>
+            </div>
           </div>
         </div>
       </Card>

@@ -1,13 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button } from '../components/Shared';
-import { ArrowLeft, Download, BarChart3, TrendingUp, PieChart, Calendar } from 'lucide-react';
+import { Card, Button, LoadingSpinner, ErrorAlert } from '../components/Shared';
+import { ArrowLeft, Download, BarChart3, TrendingUp, PieChart, Calendar, FileText, Loader } from 'lucide-react';
+import { reportsAPI, classesAPI } from '../services/api';
+import SuccessAlert from '../components/Shared/SuccessAlert';
 
 const GenerateReport = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
   const [reportType, setReportType] = useState('attendance');
-  const [dateRange, setDateRange] = useState({ start: '2024-01-01', end: '2024-01-31' });
+  const [dateRange, setDateRange] = useState({
+    start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
   const [selectedClass, setSelectedClass] = useState('all');
+  const [classes, setClasses] = useState([]);
+  const [reportOptions, setReportOptions] = useState({
+    includeSummary: true,
+    includeCharts: true,
+    includeDetails: false,
+  });
+
+  useEffect(() => {
+    loadClasses();
+  }, []);
+
+  const loadClasses = async () => {
+    try {
+      setError(null);
+      const response = await classesAPI.getAll({ limit: 100, offset: 0 });
+      if (response.success) {
+        setClasses(response.data || []);
+      } else {
+        setError(response.message || 'Failed to load classes');
+      }
+    } catch (err) {
+      console.error('Error loading classes:', err);
+    }
+  };
 
   const reportTypes = [
     {
@@ -25,10 +59,10 @@ const GenerateReport = () => {
       color: 'from-green-500 to-green-600',
     },
     {
-      id: 'financial',
-      name: 'Financial Report',
-      description: 'Fee collection and financial summary',
-      icon: BarChart3,
+      id: 'summary',
+      name: 'Summary Report',
+      description: 'Overall class and student summary',
+      icon: FileText,
       color: 'from-purple-500 to-purple-600',
     },
     {
@@ -40,14 +74,58 @@ const GenerateReport = () => {
     },
   ];
 
-  const classes = ['All Classes', '9-A', '9-B', '10-A', '10-B', '11-A', '11-B', '12-A', '12-B'];
+  const handleGenerateReport = async (format) => {
+    try {
+      setGenerating(true);
+      setError(null);
 
-  const handleGenerateReport = (format) => {
-    alert(`Generating ${reportType} report in ${format.toUpperCase()} format...`);
+      // Validate date range
+      if (new Date(dateRange.start) > new Date(dateRange.end)) {
+        setError('Start date must be before end date');
+        setGenerating(false);
+        return;
+      }
+
+      const payload = {
+        type: reportType,
+        format: format.toLowerCase(),
+        dateFrom: dateRange.start,
+        dateTo: dateRange.end,
+        classId: selectedClass === 'all' ? null : parseInt(selectedClass),
+        includeSummary: reportOptions.includeSummary,
+        includeCharts: reportOptions.includeCharts,
+        includeDetails: reportOptions.includeDetails,
+      };
+
+      const response = await reportsAPI.generate(payload);
+
+      if (response.success) {
+        setSuccess(true);
+        // Trigger download
+        if (response.downloadUrl) {
+          const link = document.createElement('a');
+          link.href = response.downloadUrl;
+          link.download = `${reportType}-report.${format.toLowerCase()}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+        setTimeout(() => setSuccess(false), 3000);
+      } else {
+        setError(response.message || 'Failed to generate report');
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred while generating report');
+    } finally {
+      setGenerating(false);
+    }
   };
 
   return (
     <div>
+      {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
+      {success && <SuccessAlert message="Report generated successfully!" onClose={() => {}} />}
+
       <div className="flex items-center gap-4 mb-8">
         <button
           onClick={() => navigate(-1)}
@@ -96,7 +174,7 @@ const GenerateReport = () => {
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Report Configuration</h2>
 
           {/* Date Range */}
-          <div className="mb-6">
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
             <h3 className="font-semibold text-gray-800 mb-4">Date Range</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -105,7 +183,7 @@ const GenerateReport = () => {
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -114,7 +192,7 @@ const GenerateReport = () => {
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -126,33 +204,45 @@ const GenerateReport = () => {
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
+              <option value="all">All Classes</option>
               {classes.map(cls => (
-                <option key={cls} value={cls.toLowerCase()}>{cls}</option>
+                <option key={cls.id} value={cls.id}>{cls.name}</option>
               ))}
             </select>
           </div>
 
           {/* Options */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <h3 className="font-semibold text-gray-800 mb-4">Report Options</h3>
             <div className="space-y-3">
               <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" defaultChecked className="w-4 h-4" />
+                <input
+                  type="checkbox"
+                  checked={reportOptions.includeSummary}
+                  onChange={(e) => setReportOptions({ ...reportOptions, includeSummary: e.target.checked })}
+                  className="w-4 h-4 rounded"
+                />
                 <span className="text-gray-700">Include Summary</span>
               </label>
               <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" defaultChecked className="w-4 h-4" />
+                <input
+                  type="checkbox"
+                  checked={reportOptions.includeCharts}
+                  onChange={(e) => setReportOptions({ ...reportOptions, includeCharts: e.target.checked })}
+                  className="w-4 h-4 rounded"
+                />
                 <span className="text-gray-700">Include Charts</span>
               </label>
               <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4" />
+                <input
+                  type="checkbox"
+                  checked={reportOptions.includeDetails}
+                  onChange={(e) => setReportOptions({ ...reportOptions, includeDetails: e.target.checked })}
+                  className="w-4 h-4 rounded"
+                />
                 <span className="text-gray-700">Include Detailed Data</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4" />
-                <span className="text-gray-700">Email Report</span>
               </label>
             </div>
           </div>
@@ -161,49 +251,29 @@ const GenerateReport = () => {
           <div className="mb-6">
             <h3 className="font-semibold text-gray-800 mb-4">Export Format</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {['PDF', 'Excel', 'CSV', 'Print'].map((format) => (
+              {['PDF', 'Excel', 'CSV'].map((format) => (
                 <Button
                   key={format}
-                  variant="secondary"
+                  variant={format === 'PDF' ? 'primary' : 'secondary'}
                   fullWidth
-                  className="py-3"
+                  className="py-3 flex items-center justify-center gap-2"
                   onClick={() => handleGenerateReport(format)}
+                  disabled={generating}
                 >
-                  {format}
+                  {generating ? (
+                    <>
+                      <Loader size={16} className="animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} />
+                      {format}
+                    </>
+                  )}
                 </Button>
               ))}
             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-4">
-            <Button variant="primary" className="flex-1 flex items-center justify-center gap-2" onClick={() => alert('Report generated! Download started...')}>
-              <Download size={18} />
-              Generate Report
-            </Button>
-            <Button variant="secondary" className="flex-1" onClick={() => alert('Preview: ' + reportType + ' Report')}>
-              Preview
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* Recent Reports */}
-      <Card>
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Reports</h2>
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-semibold text-gray-800">Attendance Report - January 2024</p>
-                  <p className="text-sm text-gray-600">Generated on Jan 31, 2024</p>
-                </div>
-                <Button variant="secondary" className="text-sm py-2" onClick={() => alert('Report downloaded successfully!')}>
-                  Download
-                </Button>
-              </div>
-            ))}
           </div>
         </div>
       </Card>

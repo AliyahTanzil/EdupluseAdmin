@@ -1,72 +1,184 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Button, Table } from '../components/Shared';
-import { ArrowLeft, Download, Plus } from 'lucide-react';
+import { Card, Button, LoadingSpinner, ErrorAlert } from '../components/Shared';
+import { ArrowLeft, Download, Plus, Filter, TrendingUp } from 'lucide-react';
+import { attendanceAPI, classesAPI } from '../services/api';
 
 const ClassAttendance = () => {
   const { classId } = useParams();
   const navigate = useNavigate();
 
-  // Mock class data
-  const classData = {
-    '1': { name: '10-A', teacher: 'Dr. Smith' },
-    '2': { name: '10-B', teacher: 'Ms. Johnson' },
-    '3': { name: '9-A', teacher: 'Mr. Brown' },
-    '4': { name: '9-B', teacher: 'Dr. Wilson' },
-    '5': { name: '11-A', teacher: 'Ms. Taylor' },
-    '6': { name: '11-B', teacher: 'Mr. Anderson' },
+  // State Management
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [classInfo, setClassInfo] = useState(null);
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [statistics, setStatistics] = useState({
+    totalStudents: 0,
+    presentToday: 0,
+    absentToday: 0,
+    attendanceRate: 0,
+  });
+
+  // Filters
+  const [dateFrom, setDateFrom] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 30);
+    return date.toISOString().split('T')[0];
+  });
+  const [dateTo, setDateTo] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedStudent, setSelectedStudent] = useState('all');
+  const [students, setStudents] = useState([]);
+
+  // Load class info and attendance records
+  useEffect(() => {
+    if (classId) {
+      loadClassInfo();
+      loadStudents();
+      loadAttendanceRecords();
+    }
+  }, [classId]);
+
+  // Reload attendance when filters change
+  useEffect(() => {
+    if (classId) {
+      loadAttendanceRecords();
+    }
+  }, [dateFrom, dateTo, selectedStudent, classId]);
+
+  const loadClassInfo = async () => {
+    try {
+      const response = await classesAPI.getById(classId);
+      if (response.success) {
+        setClassInfo(response.data);
+      } else {
+        setError(response.message || 'Failed to load class information');
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred while loading class information');
+    }
   };
 
-  const currentClass = classData[classId] || { name: 'Class', teacher: 'Unknown' };
+  const loadStudents = async () => {
+    try {
+      const response = await classesAPI.getStudents(classId, { limit: 100, offset: 0 });
+      if (response.success) {
+        setStudents(response.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to load students:', err);
+    }
+  };
 
-  // Mock attendance data
-  const [attendanceRecords] = useState([
-    { id: 1, studentName: 'John Doe', date: '2024-01-22', status: 'Present', percentage: 95 },
-    { id: 2, studentName: 'Jane Smith', date: '2024-01-22', status: 'Present', percentage: 92 },
-    { id: 3, studentName: 'Mike Johnson', date: '2024-01-22', status: 'Absent', percentage: 78 },
-    { id: 4, studentName: 'Sarah Williams', date: '2024-01-22', status: 'Present', percentage: 98 },
-    { id: 5, studentName: 'Tom Brown', date: '2024-01-22', status: 'Late', percentage: 85 },
-    { id: 6, studentName: 'Emily Davis', date: '2024-01-22', status: 'Present', percentage: 100 },
-  ]);
+  const loadAttendanceRecords = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await attendanceAPI.getByClass(classId, {
+        dateFrom,
+        dateTo,
+        studentId: selectedStudent !== 'all' ? selectedStudent : null,
+        limit: 100,
+        offset: 0,
+      });
+
+      if (response.success) {
+        const records = response.data || [];
+        setAttendanceRecords(records);
+        calculateStatistics(records);
+      } else {
+        setError(response.message || 'Failed to load attendance records');
+        setAttendanceRecords([]);
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred while loading attendance records');
+      setAttendanceRecords([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateStatistics = (records) => {
+    if (!records || records.length === 0) {
+      setStatistics({
+        totalStudents: students.length,
+        presentToday: 0,
+        absentToday: 0,
+        attendanceRate: 0,
+      });
+      return;
+    }
+
+    // Get today's records
+    const today = new Date().toISOString().split('T')[0];
+    const todayRecords = records.filter(r => r.date === today);
+
+    const presentCount = todayRecords.filter(r => r.status === 'present').length;
+    const absentCount = todayRecords.filter(r => r.status === 'absent').length;
+    const totalPresent = records.filter(r => r.status === 'present').length;
+    const attendanceRate = records.length > 0 ? Math.round((totalPresent / records.length) * 100) : 0;
+
+    setStatistics({
+      totalStudents: students.length,
+      presentToday: presentCount,
+      absentToday: absentCount,
+      attendanceRate,
+    });
+  };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'Present':
+    switch (status?.toLowerCase()) {
+      case 'present':
         return 'bg-green-100 text-green-800';
-      case 'Absent':
+      case 'absent':
         return 'bg-red-100 text-red-800';
-      case 'Late':
+      case 'late':
         return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
+  const formatStatus = (status) => {
+    return status?.charAt(0).toUpperCase() + status?.slice(1).toLowerCase();
+  };
+
   return (
     <div>
+      {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
+      {loading && attendanceRecords.length === 0 && <LoadingSpinner message="Loading attendance records..." />}
+
+      {/* Back Button */}
+      <div className="flex items-center gap-4 mb-8">
+        <button
+          onClick={() => navigate('/student-dashboard')}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+        >
+          <ArrowLeft size={20} />
+          Back to Classes
+        </button>
+      </div>
+
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-4 mb-6">
-          <button
-            onClick={() => navigate('/student-dashboard')}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
-          >
-            <ArrowLeft size={20} />
-            Back to Classes
-          </button>
-        </div>
-
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-4xl font-bold text-gray-800">{currentClass.name} - Attendance</h1>
-            <p className="text-gray-600 mt-2">Class Teacher: <span className="font-semibold">{currentClass.teacher}</span></p>
+            <h1 className="text-4xl font-bold text-gray-800">
+              {classInfo?.name || 'Class'} - Attendance
+            </h1>
+            {classInfo && (
+              <p className="text-gray-600 mt-2">
+                Class Teacher: <span className="font-semibold">{classInfo.teacher || 'Unknown'}</span>
+              </p>
+            )}
           </div>
           <div className="flex gap-3">
-            <Button variant="secondary" className="flex items-center gap-2" onClick={() => navigate('/export-reports')}>
-              <Download size={18} />
-              Export Report
-            </Button>
-            <Button variant="primary" className="flex items-center gap-2" onClick={() => navigate(`/class/${classId}/mark-attendance`)}>
+            <Button 
+              variant="secondary" 
+              className="flex items-center gap-2"
+              onClick={() => navigate(`/class/${classId}/mark-attendance`)}
+            >
               <Plus size={18} />
               Mark Attendance
             </Button>
@@ -74,82 +186,169 @@ const ClassAttendance = () => {
         </div>
       </div>
 
-      {/* Attendance Stats */}
+      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
+          <div className="p-6">
+            <p className="text-gray-600 text-sm font-medium">Total Students</p>
+            <p className="text-3xl font-bold text-blue-600 mt-2">{statistics.totalStudents}</p>
+            <p className="text-xs text-gray-500 mt-2">In class</p>
+          </div>
+        </Card>
+
         <Card className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200">
           <div className="p-6">
             <p className="text-gray-600 text-sm font-medium">Present Today</p>
-            <p className="text-3xl font-bold text-green-600 mt-2">32</p>
-            <p className="text-xs text-gray-500 mt-2">Out of 35 students</p>
+            <p className="text-3xl font-bold text-green-600 mt-2">{statistics.presentToday}</p>
+            <p className="text-xs text-gray-500 mt-2">Out of {statistics.totalStudents} students</p>
           </div>
         </Card>
 
         <Card className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200">
           <div className="p-6">
-            <p className="text-gray-600 text-sm font-medium">Absent</p>
-            <p className="text-3xl font-bold text-red-600 mt-2">2</p>
-            <p className="text-xs text-gray-500 mt-2">5.7% of class</p>
+            <p className="text-gray-600 text-sm font-medium">Absent Today</p>
+            <p className="text-3xl font-bold text-red-600 mt-2">{statistics.absentToday}</p>
+            <p className="text-xs text-gray-500 mt-2">{statistics.totalStudents > 0 ? Math.round((statistics.absentToday / statistics.totalStudents) * 100) : 0}% of class</p>
           </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200">
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200">
           <div className="p-6">
-            <p className="text-gray-600 text-sm font-medium">Late</p>
-            <p className="text-3xl font-bold text-yellow-600 mt-2">1</p>
-            <p className="text-xs text-gray-500 mt-2">2.9% of class</p>
-          </div>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
-          <div className="p-6">
-            <p className="text-gray-600 text-sm font-medium">Attendance Rate</p>
-            <p className="text-3xl font-bold text-blue-600 mt-2">92%</p>
-            <p className="text-xs text-gray-500 mt-2">Class average</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Attendance Rate</p>
+                <p className="text-3xl font-bold text-purple-600 mt-2">{statistics.attendanceRate}%</p>
+              </div>
+              <TrendingUp size={32} className="text-purple-600 opacity-20" />
+            </div>
+            <p className="text-xs text-gray-500 mt-2">Overall average</p>
           </div>
         </Card>
       </div>
 
-      {/* Attendance Records */}
+      {/* Filters */}
+      <Card className="mb-6">
+        <div className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Filter size={18} className="text-gray-600" />
+            <h3 className="font-semibold text-gray-800">Filters</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Date From */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Date To */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Student Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Student</label>
+              <select
+                value={selectedStudent}
+                onChange={(e) => setSelectedStudent(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">All Students</option>
+                {students.map(student => (
+                  <option key={student.id} value={student.id}>
+                    {student.name} (Roll: {student.roll})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Reset Button */}
+            <div className="flex items-end">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const date = new Date();
+                  date.setDate(date.getDate() - 30);
+                  setDateFrom(date.toISOString().split('T')[0]);
+                  setDateTo(new Date().toISOString().split('T')[0]);
+                  setSelectedStudent('all');
+                }}
+                className="w-full"
+              >
+                Reset Filters
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Attendance Records Table */}
       <Card>
         <div className="p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-6">Student Attendance</h2>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Student Name</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Status</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Attendance %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attendanceRecords.map((record, index) => (
-                  <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="py-3 px-4 text-gray-800">{record.studentName}</td>
-                    <td className="py-3 px-4 text-gray-600">{record.date}</td>
-                    <td className="py-3 px-4 text-center">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(record.status)}`}>
-                        {record.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-12 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-green-500 h-2 rounded-full" 
-                            style={{ width: `${record.percentage}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold text-gray-700">{record.percentage}%</span>
-                      </div>
-                    </td>
+          <h2 className="text-xl font-bold text-gray-800 mb-6">Attendance Records</h2>
+
+          {attendanceRecords.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg">No attendance records found for the selected filters.</p>
+              <p className="text-gray-500 mt-2">Try adjusting your date range or student selection.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Student</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Roll</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Session</th>
+                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {attendanceRecords.map((record, index) => (
+                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                      <td className="py-3 px-4 text-gray-800 font-medium">{record.studentName}</td>
+                      <td className="py-3 px-4 text-gray-600">{record.roll}</td>
+                      <td className="py-3 px-4 text-gray-600">
+                        {new Date(record.date).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </td>
+                      <td className="py-3 px-4 text-gray-600 capitalize">{record.session || 'Morning'}</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(record.status)}`}>
+                          {formatStatus(record.status)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Summary */}
+          {attendanceRecords.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-sm text-gray-600">
+                Showing <span className="font-semibold">{attendanceRecords.length}</span> records
+              </p>
+            </div>
+          )}
         </div>
       </Card>
     </div>

@@ -6,3 +6,6 @@ export { Form, FormGroup, Input, Select, Textarea } from './Form';
 export { Button } from './Button';
 export { Navbar } from './Navbar';
 export { Sidebar } from './Sidebar';
+export { default as LoadingSpinner } from './LoadingSpinner';
+export { default as ErrorAlert } from './ErrorAlert';
+export { default as SuccessAlert } from './SuccessAlert';
