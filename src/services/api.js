@@ -439,6 +439,168 @@ export const timetableAPI = {
   },
 };
 
+// ==================== COURSES API ====================
+
+export const coursesAPI = {
+  getAll: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/courses${queryString ? `?${queryString}` : ''}`;
+    
+    try {
+      const response = await makeRequest(endpoint);
+      setCachedData(endpoint, response);
+      return response;
+    } catch (error) {
+      return getCachedData(endpoint) || { success: false, data: [] };
+    }
+  },
+
+  getById: async (id) => {
+    const endpoint = `/courses/${id}`;
+    
+    try {
+      const response = await makeRequest(endpoint);
+      setCachedData(endpoint, response);
+      return response;
+    } catch (error) {
+      return getCachedData(endpoint) || { success: false };
+    }
+  },
+
+  create: async (courseData) => {
+    const endpoint = '/courses';
+    
+    try {
+      const response = await makeRequest(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(courseData),
+      });
+      
+      localStorage.removeItem(cacheKey('/courses'));
+      return response;
+    } catch (error) {
+      console.error('Failed to create course:', error);
+      throw error;
+    }
+  },
+
+  update: async (id, updates) => {
+    const endpoint = `/courses/${id}`;
+    
+    try {
+      const response = await makeRequest(endpoint, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      
+      localStorage.removeItem(cacheKey(`/courses/${id}`));
+      localStorage.removeItem(cacheKey('/courses'));
+      return response;
+    } catch (error) {
+      console.error('Failed to update course:', error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    const endpoint = `/courses/${id}`;
+    
+    try {
+      const response = await makeRequest(endpoint, {
+        method: 'DELETE',
+      });
+      
+      localStorage.removeItem(cacheKey(`/courses/${id}`));
+      localStorage.removeItem(cacheKey('/courses'));
+      return response;
+    } catch (error) {
+      console.error('Failed to delete course:', error);
+      throw error;
+    }
+  },
+};
+
+// ==================== CLASSES API ====================
+
+export const classesAPI = {
+  getAll: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/classes${queryString ? `?${queryString}` : ''}`;
+    
+    try {
+      const response = await makeRequest(endpoint);
+      setCachedData(endpoint, response);
+      return response;
+    } catch (error) {
+      return getCachedData(endpoint) || { success: false, data: [] };
+    }
+  },
+
+  getById: async (id) => {
+    const endpoint = `/classes/${id}`;
+    
+    try {
+      const response = await makeRequest(endpoint);
+      setCachedData(endpoint, response);
+      return response;
+    } catch (error) {
+      return getCachedData(endpoint) || { success: false };
+    }
+  },
+
+  create: async (classData) => {
+    const endpoint = '/classes';
+    
+    try {
+      const response = await makeRequest(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(classData),
+      });
+      
+      localStorage.removeItem(cacheKey('/classes'));
+      return response;
+    } catch (error) {
+      console.error('Failed to create class:', error);
+      throw error;
+    }
+  },
+
+  update: async (id, updates) => {
+    const endpoint = `/classes/${id}`;
+    
+    try {
+      const response = await makeRequest(endpoint, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      
+      localStorage.removeItem(cacheKey(`/classes/${id}`));
+      localStorage.removeItem(cacheKey('/classes'));
+      return response;
+    } catch (error) {
+      console.error('Failed to update class:', error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    const endpoint = `/classes/${id}`;
+    
+    try {
+      const response = await makeRequest(endpoint, {
+        method: 'DELETE',
+      });
+      
+      localStorage.removeItem(cacheKey(`/classes/${id}`));
+      localStorage.removeItem(cacheKey('/classes'));
+      return response;
+    } catch (error) {
+      console.error('Failed to delete class:', error);
+      throw error;
+    }
+  },
+};
+
 // ==================== SUBJECTS API ====================
 
 export const subjectsAPI = {
@@ -798,6 +960,8 @@ export default {
   attendanceAPI,
   timetableAPI,
   subjectsAPI,
+  coursesAPI,
+  classesAPI,
   reportsAPI,
   devicesAPI,
   syncAPI,

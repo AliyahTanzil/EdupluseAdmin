@@ -191,7 +191,7 @@ const StudentDashboard = () => {
                       onClick={() => navigate(`/class/${classItem.id}/attendance`)}
                     >
                       <CheckSquare size={32} className="text-blue-600" />
-                      <span className="font-extrabold whitespace-nowrap">Attendance</span>
+                      <span className="font-semibold text-[9px] whitespace-nowrap">Attendance</span>
                     </Button>
                     <Button 
                       variant="secondary" 
@@ -200,7 +200,7 @@ const StudentDashboard = () => {
                       onClick={() => navigate(`/class/${classItem.id}/timetable`)}
                     >
                       <Calendar size={32} className="text-purple-600" />
-                      <span className="font-extrabold whitespace-nowrap">Timetable</span>
+                      <span className="font-semibold text-[9px] whitespace-nowrap">Timetable</span>
                     </Button>
                     <Button 
                       variant="secondary" 
@@ -209,7 +209,7 @@ const StudentDashboard = () => {
                       onClick={() => navigate(`/class/${classItem.id}/subjects`)}
                     >
                       <Book size={32} className="text-green-600" />
-                      <span className="font-extrabold whitespace-nowrap">Subjects</span>
+                      <span className="font-semibold text-[9px] whitespace-nowrap">Subjects</span>
                     </Button>
                   </div>
                 </div>
