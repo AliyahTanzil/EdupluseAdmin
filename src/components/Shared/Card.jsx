@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Card Component - Reusable card for dashboard content
@@ -40,6 +41,14 @@ export const Card = ({
       {children}
     </div>
   );
+};
+
+Card.propTypes = {
+  children: PropTypes.node.isRequired,
+  className: PropTypes.string,
+  elevation: PropTypes.oneOf(['none', 'sm', 'md', 'lg']),
+  onClick: PropTypes.func,
+  padding: PropTypes.oneOf(['sm', 'md', 'lg']),
 };
 
 export default Card;

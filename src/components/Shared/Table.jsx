@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Table Component - Reusable data table with sorting and pagination
@@ -79,6 +80,26 @@ export const Table = ({
       </table>
     </div>
   );
+};
+
+Table.propTypes = {
+  columns: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+      render: PropTypes.func,
+    })
+  ).isRequired,
+  data: PropTypes.array.isRequired,
+  onRowClick: PropTypes.func,
+  actions: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      onClick: PropTypes.func.isRequired,
+      className: PropTypes.string,
+    })
+  ),
+  striped: PropTypes.bool,
 };
 
 export default Table;

@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * WeekSummary Component
@@ -24,7 +25,7 @@ const WeekSummary = ({
   }, 0);
 
   const totalDays = daysOfWeek.length;
-  const percentage = Math.round((presentCount / totalDays) * 100);
+  const percentage = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
 
   // Color based on percentage
   const getColor = (pct) => {
@@ -79,6 +80,14 @@ const WeekSummary = ({
       </p>
     </div>
   );
+};
+
+WeekSummary.propTypes = {
+  attendance: PropTypes.object.isRequired,
+  studentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  daysOfWeek: PropTypes.array.isRequired,
+  sessions: PropTypes.arrayOf(PropTypes.string),
+  onClick: PropTypes.func,
 };
 
 export default WeekSummary;

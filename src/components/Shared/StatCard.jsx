@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * StatCard Component - Displays key statistics
@@ -32,6 +33,19 @@ export const StatCard = ({
       </div>
     </div>
   );
+};
+
+StatCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  icon: PropTypes.elementType,
+  trend: PropTypes.shape({
+    positive: PropTypes.bool.isRequired,
+    value: PropTypes.number.isRequired,
+    label: PropTypes.string.isRequired,
+  }),
+  bgColor: PropTypes.string,
+  iconColor: PropTypes.string,
 };
 
 export default StatCard;

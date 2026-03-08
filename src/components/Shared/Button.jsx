@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Button Component - Primary, Secondary, Danger variants
@@ -44,6 +45,17 @@ export const Button = ({
       {children}
     </button>
   );
+};
+
+Button.propTypes = {
+  children: PropTypes.node.isRequired,
+  variant: PropTypes.oneOf(['primary', 'secondary', 'danger', 'success', 'outline']),
+  size: PropTypes.oneOf(['sm', 'md', 'lg']),
+  fullWidth: PropTypes.bool,
+  disabled: PropTypes.bool,
+  onClick: PropTypes.func,
+  type: PropTypes.oneOf(['button', 'submit', 'reset']),
+  className: PropTypes.string,
 };
 
 export default Button;

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { CheckCircle, XCircle, AlertCircle, Fingerprint } from 'lucide-react';
 
 /**
@@ -7,8 +8,6 @@ import { CheckCircle, XCircle, AlertCircle, Fingerprint } from 'lucide-react';
  */
 const AttendanceCell = ({
   status = 'not_marked',
-  session = 'morning',
-  date = null,
   hasGateScan = false,
   isDisabled = false,
   note = null,
@@ -104,6 +103,15 @@ const AttendanceCell = ({
       )}
     </div>
   );
+};
+
+AttendanceCell.propTypes = {
+  status: PropTypes.oneOf(['present', 'absent', 'late', 'excused', 'not_marked']),
+  hasGateScan: PropTypes.bool,
+  isDisabled: PropTypes.bool,
+  note: PropTypes.string,
+  onChange: PropTypes.func,
+  onContextMenu: PropTypes.func,
 };
 
 export default AttendanceCell;

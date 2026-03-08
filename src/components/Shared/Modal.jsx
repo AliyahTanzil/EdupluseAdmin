@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Modal Component - Reusable modal dialog
@@ -58,6 +59,15 @@ export const Modal = ({
       </div>
     </div>
   );
+};
+
+Modal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  title: PropTypes.string.isRequired,
+  children: PropTypes.node.isRequired,
+  footer: PropTypes.node,
+  size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl', 'full']),
 };
 
 export default Modal;

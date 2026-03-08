@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Form Component - Reusable form with validation
@@ -13,6 +14,12 @@ export const Form = ({
       {children}
     </form>
   );
+};
+
+Form.propTypes = {
+  children: PropTypes.node.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  className: PropTypes.string,
 };
 
 /**
@@ -36,6 +43,12 @@ export const FormGroup = ({
       )}
     </div>
   );
+};
+
+FormGroup.propTypes = {
+  label: PropTypes.string,
+  error: PropTypes.string,
+  children: PropTypes.node.isRequired,
 };
 
 /**
@@ -67,6 +80,12 @@ export const Input = React.forwardRef(({
 });
 
 Input.displayName = 'Input';
+
+Input.propTypes = {
+  type: PropTypes.string,
+  placeholder: PropTypes.string,
+  error: PropTypes.bool,
+};
 
 /**
  * Select Component
@@ -105,6 +124,17 @@ export const Select = React.forwardRef(({
 
 Select.displayName = 'Select';
 
+Select.propTypes = {
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      label: PropTypes.string.isRequired,
+    })
+  ),
+  placeholder: PropTypes.string,
+  error: PropTypes.bool,
+};
+
 /**
  * Textarea Component
  */
@@ -134,5 +164,11 @@ export const Textarea = React.forwardRef(({
 });
 
 Textarea.displayName = 'Textarea';
+
+Textarea.propTypes = {
+  placeholder: PropTypes.string,
+  error: PropTypes.bool,
+  rows: PropTypes.number,
+};
 
 export default Form;

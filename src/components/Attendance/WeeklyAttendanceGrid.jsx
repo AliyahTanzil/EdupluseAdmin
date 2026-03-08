@@ -1,8 +1,12 @@
 import React, { useState, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { ChevronLeft, ChevronRight, Download, Printer } from 'lucide-react';
 import { Button } from '../Shared';
 import AttendanceCell from './AttendanceCell';
 import WeekSummary from './WeekSummary';
+
+// All days including weekends - defined outside to prevent re-creation on renders
+const ALL_DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 /**
  * WeeklyAttendanceGrid Component
@@ -10,8 +14,6 @@ import WeekSummary from './WeekSummary';
  * Features: Weekly and Monthly views, Entry/Exit marking, real-time updates
  */
 const WeeklyAttendanceGrid = ({ className = '10-A', viewMode = 'week', currentMonth = new Date() }) => {
-  // All days including weekends
-  const allDaysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const sessions = ['Morning', 'Afternoon'];
 
   // Sample student data
@@ -44,7 +46,7 @@ const WeeklyAttendanceGrid = ({ className = '10-A', viewMode = 'week', currentMo
   // Get days to display based on view mode - properly memoized
   const daysToDisplay = useMemo(() => {
     if (viewMode === 'week') {
-      return allDaysOfWeek;
+      return ALL_DAYS_OF_WEEK;
     } else {
       // Monthly view - get all days of the month
       const year = currentMonth.getFullYear();
@@ -59,7 +61,7 @@ const WeeklyAttendanceGrid = ({ className = '10-A', viewMode = 'week', currentMo
       }
       return days;
     }
-  }, [viewMode, currentMonth, allDaysOfWeek]);
+  }, [viewMode, currentMonth]);
 
   const getWeekDateRange = (date) => {
     const curr = new Date(date);
@@ -206,7 +208,6 @@ const WeeklyAttendanceGrid = ({ className = '10-A', viewMode = 'week', currentMo
                       >
                         <AttendanceCell
                           status={data.status}
-                          session={session}
                           hasGateScan={data.hasGateScan}
                           onChange={(newStatus) => handleCellChange(student.id, cellIndex, session, newStatus)}
                         />
@@ -267,6 +268,12 @@ const WeeklyAttendanceGrid = ({ className = '10-A', viewMode = 'week', currentMo
       </div>
     </div>
   );
+};
+
+WeeklyAttendanceGrid.propTypes = {
+  className: PropTypes.string,
+  viewMode: PropTypes.oneOf(['week', 'month']),
+  currentMonth: PropTypes.instanceOf(Date),
 };
 
 export default WeeklyAttendanceGrid;

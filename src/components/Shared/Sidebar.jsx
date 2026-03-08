@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -8,7 +9,6 @@ import {
   Clock,
   LogOut,
   ChevronRight,
-  CheckSquare,
   FileCheck,
 } from 'lucide-react';
 
@@ -137,6 +137,11 @@ export const Sidebar = ({ isOpen, onClose }) => {
       </aside>
     </>
   );
+};
+
+Sidebar.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
 
 export default Sidebar;

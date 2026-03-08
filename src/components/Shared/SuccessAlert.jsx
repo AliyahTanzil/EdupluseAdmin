@@ -1,3 +1,5 @@
+import React from 'react';
+import PropTypes from 'prop-types';
 import { CheckCircle, X } from 'lucide-react';
 
 const SuccessAlert = ({ message, onClose, dismissible = true, autoClose = true }) => {
@@ -33,6 +35,13 @@ const SuccessAlert = ({ message, onClose, dismissible = true, autoClose = true }
       </div>
     </div>
   );
+};
+
+SuccessAlert.propTypes = {
+  message: PropTypes.string.isRequired,
+  onClose: PropTypes.func,
+  dismissible: PropTypes.bool,
+  autoClose: PropTypes.bool,
 };
 
 export default SuccessAlert;

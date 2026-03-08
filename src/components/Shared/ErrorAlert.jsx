@@ -1,3 +1,5 @@
+import React from 'react';
+import PropTypes from 'prop-types';
 import { AlertCircle, X } from 'lucide-react';
 
 const ErrorAlert = ({ message, onClose, dismissible = true }) => {
@@ -23,6 +25,12 @@ const ErrorAlert = ({ message, onClose, dismissible = true }) => {
       </div>
     </div>
   );
+};
+
+ErrorAlert.propTypes = {
+  message: PropTypes.string.isRequired,
+  onClose: PropTypes.func,
+  dismissible: PropTypes.bool,
 };
 
 export default ErrorAlert;

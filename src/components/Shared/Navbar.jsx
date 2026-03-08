@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { Bell, Search, User, ChevronDown } from 'lucide-react';
 
 /**
  * Navbar Component - Top navigation with branding, search, and profile
  */
 export const Navbar = ({ onMenuToggle }) => {
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [notifications, setNotifications] = useState([
+  const [notifications] = useState([ // notifications is used, but setNotifications is not
     { id: 1, message: '10 students absent today', time: '5 mins ago' },
     { id: 2, message: 'New assignment from Math', time: '1 hour ago' },
   ]);
@@ -101,6 +101,10 @@ export const Navbar = ({ onMenuToggle }) => {
       </div>
     </nav>
   );
+};
+
+Navbar.propTypes = {
+  onMenuToggle: PropTypes.func.isRequired,
 };
 
 export default Navbar;
