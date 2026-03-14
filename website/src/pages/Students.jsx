@@ -149,36 +149,45 @@ const Students = () => {
         </div>
       </Card>
 
-      {students.length > 0 ? (
+      {filteredStudents.length > 0 ? (
         <>
           <Card>
-            <Table data={students} columns={columns} actions={actions} />
+            <Table data={filteredStudents} columns={columns} actions={actions} />
           </Card>
 
-          {/* Pagination */}
-          <div className="flex justify-center gap-2 mt-6">
-            <Button
-              onClick={() => setPage(Math.max(0, page - 1))}
-              disabled={page === 0}
-              variant="secondary"
-            >
-              Previous
-            </Button>
-            <span className="px-4 py-2 text-gray-700 font-medium">Page {page + 1}</span>
-            <Button
-              onClick={() => setPage(page + 1)}
-              disabled={students.length < pageSize}
-              variant="secondary"
-            >
-              Next
-            </Button>
-          </div>
+          {/* Pagination - only show if not searching */}
+          {!isSearching && (
+            <div className="flex justify-center gap-2 mt-6">
+              <Button
+                onClick={() => setPage(Math.max(0, page - 1))}
+                disabled={page === 0}
+                variant="secondary"
+              >
+                Previous
+              </Button>
+              <span className="px-4 py-2 text-gray-700 font-medium">Page {page + 1}</span>
+              <Button
+                onClick={() => setPage(page + 1)}
+                disabled={students.length < pageSize}
+                variant="secondary"
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </>
       ) : (
         <Card className="text-center py-12">
-          <p className="text-gray-500 mb-4">No students found.</p>
+          <p className="text-gray-500 mb-4">
+            {isSearching ? 'No students match your search.' : 'No students found.'}
+          </p>
+          {isSearching && (
+            <Button variant="secondary" onClick={() => setSearchQuery('')} className="mr-2">
+              Clear Search
+            </Button>
+          )}
           <Button variant="primary" onClick={() => navigate('/add-new-student')}>
-            Add the first student
+            {isSearching ? 'Add New Student' : 'Add the first student'}
           </Button>
         </Card>
       )}
