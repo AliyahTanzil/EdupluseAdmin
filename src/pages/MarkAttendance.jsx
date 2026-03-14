@@ -253,9 +253,9 @@ const MarkAttendance = () => {
               {loading ? (
                 <LoadingSpinner message="Loading students..." />
               ) : (
-            <>
-              {/* Class Info & Statistics */}
-              <Card className="mb-6">
+                <>
+                  {/* Class Info & Statistics */}
+                  <Card className="mb-6">
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
@@ -369,6 +369,8 @@ const MarkAttendance = () => {
                   Cancel
                 </Button>
               </div>
+                </>
+              )}
             </>
           )}
         </>
