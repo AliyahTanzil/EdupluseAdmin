@@ -91,6 +91,19 @@ export const studentsAPI = {
     }
   },
 
+  getByClass: async (classId, params = {}) => {
+    const queryString = new URLSearchParams({ ...params, class: classId }).toString();
+    const endpoint = `/students${queryString ? `?${queryString}` : ''}`;
+    
+    try {
+      const response = await makeRequest(endpoint);
+      setCachedData(endpoint, response);
+      return response;
+    } catch (error) {
+      return getCachedData(endpoint) || { success: false, data: [] };
+    }
+  },
+
   create: async (studentData) => {
     const endpoint = '/students';
     
@@ -302,6 +315,19 @@ export const attendanceAPI = {
     }
   },
 
+  getByClass: async (classId, params = {}) => {
+    const queryString = new URLSearchParams({ ...params, class_name: classId }).toString();
+    const endpoint = `/attendance${queryString ? `?${queryString}` : ''}`;
+    
+    try {
+      const response = await makeRequest(endpoint);
+      setCachedData(endpoint, response);
+      return response;
+    } catch (error) {
+      return getCachedData(endpoint) || { success: false, data: [] };
+    }
+  },
+
   update: async (id, updates) => {
     const endpoint = `/attendance/${id}`;
     
@@ -342,6 +368,18 @@ export const timetableAPI = {
   getAll: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     const endpoint = `/timetable${queryString ? `?${queryString}` : ''}`;
+    
+    try {
+      const response = await makeRequest(endpoint);
+      setCachedData(endpoint, response);
+      return response;
+    } catch (error) {
+      return getCachedData(endpoint) || { success: false, data: [] };
+    }
+  },
+
+  getByClass: async (className) => {
+    const endpoint = `/timetable/class/${className}`;
     
     try {
       const response = await makeRequest(endpoint);

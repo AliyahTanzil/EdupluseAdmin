@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button, LoadingSpinner, ErrorAlert } from '../components/Shared';
 import { ArrowLeft, Download, Plus, Filter, TrendingUp } from 'lucide-react';
-import { attendanceAPI, classesAPI } from '../services/api';
+import { attendanceAPI, studentsAPI } from '../services/api';
 
 const ClassAttendance = () => {
   const { classId } = useParams();
@@ -11,7 +11,6 @@ const ClassAttendance = () => {
   // State Management
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [classInfo, setClassInfo] = useState(null);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [statistics, setStatistics] = useState({
     totalStudents: 0,
@@ -33,7 +32,6 @@ const ClassAttendance = () => {
   // Load class info and attendance records
   useEffect(() => {
     if (classId) {
-      loadClassInfo();
       loadStudents();
       loadAttendanceRecords();
     }
@@ -46,22 +44,9 @@ const ClassAttendance = () => {
     }
   }, [dateFrom, dateTo, selectedStudent, classId]);
 
-  const loadClassInfo = async () => {
-    try {
-      const response = await classesAPI.getById(classId);
-      if (response.success) {
-        setClassInfo(response.data);
-      } else {
-        setError(response.message || 'Failed to load class information');
-      }
-    } catch (err) {
-      setError(err.message || 'An error occurred while loading class information');
-    }
-  };
-
   const loadStudents = async () => {
     try {
-      const response = await classesAPI.getStudents(classId, { limit: 100, offset: 0 });
+      const response = await studentsAPI.getByClass(classId, { limit: 100, offset: 0 });
       if (response.success) {
         setStudents(response.data || []);
       }
@@ -76,17 +61,26 @@ const ClassAttendance = () => {
       setError(null);
 
       const response = await attendanceAPI.getByClass(classId, {
-        dateFrom,
-        dateTo,
-        studentId: selectedStudent !== 'all' ? selectedStudent : null,
-        limit: 100,
+        limit: 1000,
         offset: 0,
       });
 
       if (response.success) {
         const records = response.data || [];
-        setAttendanceRecords(records);
-        calculateStatistics(records);
+        
+        // Filter records by date range
+        const filtered = records.filter(r => {
+          const recordDate = r.date;
+          return recordDate >= dateFrom && recordDate <= dateTo;
+        });
+
+        // Filter by student if selected
+        const studentFiltered = selectedStudent !== 'all' 
+          ? filtered.filter(r => r.student_id === selectedStudent)
+          : filtered;
+
+        setAttendanceRecords(studentFiltered);
+        calculateStatistics(studentFiltered, records);
       } else {
         setError(response.message || 'Failed to load attendance records');
         setAttendanceRecords([]);
@@ -99,10 +93,10 @@ const ClassAttendance = () => {
     }
   };
 
-  const calculateStatistics = (records) => {
-    if (!records || records.length === 0) {
+  const calculateStatistics = (filteredRecords, allRecords) => {
+    if (!students || students.length === 0) {
       setStatistics({
-        totalStudents: students.length,
+        totalStudents: 0,
         presentToday: 0,
         absentToday: 0,
         attendanceRate: 0,
@@ -112,12 +106,12 @@ const ClassAttendance = () => {
 
     // Get today's records
     const today = new Date().toISOString().split('T')[0];
-    const todayRecords = records.filter(r => r.date === today);
+    const todayRecords = filteredRecords.filter(r => r.date === today);
 
-    const presentCount = todayRecords.filter(r => r.status === 'present').length;
-    const absentCount = todayRecords.filter(r => r.status === 'absent').length;
-    const totalPresent = records.filter(r => r.status === 'present').length;
-    const attendanceRate = records.length > 0 ? Math.round((totalPresent / records.length) * 100) : 0;
+    const presentCount = todayRecords.filter(r => r.status === 'present' || r.morning_status === 'present' || r.afternoon_status === 'present').length;
+    const absentCount = todayRecords.filter(r => r.status === 'absent' || (r.morning_status === 'absent' && r.afternoon_status === 'absent')).length;
+    const totalPresent = filteredRecords.filter(r => r.status === 'present' || r.morning_status === 'present').length;
+    const attendanceRate = filteredRecords.length > 0 ? Math.round((totalPresent / filteredRecords.length) * 100) : 0;
 
     setStatistics({
       totalStudents: students.length,
@@ -144,6 +138,11 @@ const ClassAttendance = () => {
     return status?.charAt(0).toUpperCase() + status?.slice(1).toLowerCase();
   };
 
+  const getStudentName = (studentId) => {
+    const student = students.find(s => s.id === studentId);
+    return student ? student.name : 'Unknown Student';
+  };
+
   return (
     <div>
       {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
@@ -152,11 +151,11 @@ const ClassAttendance = () => {
       {/* Back Button */}
       <div className="flex items-center gap-4 mb-8">
         <button
-          onClick={() => navigate('/student-dashboard')}
+          onClick={() => navigate('/attendance')}
           className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
         >
           <ArrowLeft size={20} />
-          Back to Classes
+          Back to Attendance
         </button>
       </div>
 
@@ -165,19 +164,14 @@ const ClassAttendance = () => {
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-4xl font-bold text-gray-800">
-              {classInfo?.name || 'Class'} - Attendance
+              {classId} - Attendance
             </h1>
-            {classInfo && (
-              <p className="text-gray-600 mt-2">
-                Class Teacher: <span className="font-semibold">{classInfo.teacher || 'Unknown'}</span>
-              </p>
-            )}
           </div>
           <div className="flex gap-3">
             <Button 
               variant="secondary" 
               className="flex items-center gap-2"
-              onClick={() => navigate(`/class/${classId}/mark-attendance`)}
+              onClick={() => navigate('/mark-attendance')}
             >
               <Plus size={18} />
               Mark Attendance
@@ -310,17 +304,16 @@ const ClassAttendance = () => {
                 <thead>
                   <tr className="border-b-2 border-gray-200">
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Student</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Roll</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Session</th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Status</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Morning</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Afternoon</th>
+                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Remarks</th>
                   </tr>
                 </thead>
                 <tbody>
                   {attendanceRecords.map((record, index) => (
                     <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-gray-800 font-medium">{record.studentName}</td>
-                      <td className="py-3 px-4 text-gray-600">{record.roll}</td>
+                      <td className="py-3 px-4 text-gray-800 font-medium">{getStudentName(record.student_id)}</td>
                       <td className="py-3 px-4 text-gray-600">
                         {new Date(record.date).toLocaleDateString('en-US', {
                           year: 'numeric',
@@ -328,12 +321,17 @@ const ClassAttendance = () => {
                           day: 'numeric',
                         })}
                       </td>
-                      <td className="py-3 px-4 text-gray-600 capitalize">{record.session || 'Morning'}</td>
-                      <td className="py-3 px-4 text-center">
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(record.status)}`}>
-                          {formatStatus(record.status)}
+                      <td className="py-3 px-4">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(record.morning_status || record.status)}`}>
+                          {formatStatus(record.morning_status || record.status || 'unmarked')}
                         </span>
                       </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(record.afternoon_status || record.status)}`}>
+                          {formatStatus(record.afternoon_status || record.status || 'unmarked')}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center text-gray-600 text-sm">{record.remarks || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

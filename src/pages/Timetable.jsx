@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, Button, LoadingSpinner, ErrorAlert } from '../components/Shared';
 import { Edit2, ArrowLeft, Filter } from 'lucide-react';
-import { timetableAPI, classesAPI } from '../services/api';
+import { timetableAPI, studentsAPI } from '../services/api';
 
 const Timetable = () => {
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ const Timetable = () => {
   // State Management
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [classes, setClasses] = useState([]);
+  const [availableClasses, setAvailableClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(classId || '');
   const [timetableData, setTimetableData] = useState({});
   const [schedule, setSchedule] = useState({});
@@ -32,14 +32,16 @@ const Timetable = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await classesAPI.getAll({ limit: 100, offset: 0 });
+      // Get all students and extract unique classes
+      const response = await studentsAPI.getAll({ limit: 1000, offset: 0 });
 
-      if (response.success) {
-        setClasses(response.data || []);
+      if (response.success && response.data) {
+        const classes = [...new Set(response.data.map(s => s.class))].filter(Boolean);
+        setAvailableClasses(classes.sort());
         if (classId) {
           setSelectedClass(classId);
-        } else if (response.data && response.data.length > 0) {
-          setSelectedClass(response.data[0].id);
+        } else if (classes.length > 0) {
+          setSelectedClass(classes[0]);
         }
       } else {
         setError(response.message || 'Failed to load classes');
@@ -92,9 +94,9 @@ const Timetable = () => {
     // Sort each day by time
     Object.keys(organized).forEach(day => {
       organized[day].sort((a, b) => {
-        const timeA = a.startTime || '00:00';
-        const timeB = b.startTime || '00:00';
-        return timeA.localeCompare(timeB);
+        const timeA = a.period_number || 0;
+        const timeB = b.period_number || 0;
+        return timeA - timeB;
       });
     });
 
@@ -104,16 +106,19 @@ const Timetable = () => {
   const getTimeSlots = () => {
     const slots = new Set();
     Object.values(timetableData).forEach(entry => {
-      if (entry.startTime) {
-        slots.add(entry.startTime);
+      if (entry.period_number) {
+        slots.add(entry.period_number);
       }
     });
-    return Array.from(slots).sort();
+    return Array.from(slots).sort((a, b) => a - b);
   };
 
-  const getEntryForTimeSlot = (day, time) => {
+  const getEntryForTimeSlot = (day, period) => {
+    if (!Array.isArray(timetableData)) {
+      return null;
+    }
     return timetableData.find(
-      entry => entry.day === day && entry.startTime === time
+      entry => entry.day === day && entry.period_number === period
     );
   };
 
@@ -128,6 +133,9 @@ const Timetable = () => {
       'Art': 'bg-indigo-100 text-indigo-800',
       'Music': 'bg-orange-100 text-orange-800',
       'Break': 'bg-gray-100 text-gray-600',
+      'Mathematics': 'bg-blue-100 text-blue-800',
+      'Hindi': 'bg-orange-100 text-orange-800',
+      'Social Studies': 'bg-yellow-100 text-yellow-800',
     };
 
     return colors[subject] || 'bg-gray-100 text-gray-800';
@@ -137,7 +145,6 @@ const Timetable = () => {
     return <LoadingSpinner message="Loading timetable..." />;
   }
 
-  const selectedClassData = classes.find(c => c.id === parseInt(selectedClass));
   const timeSlots = getTimeSlots();
 
   return (
@@ -174,24 +181,21 @@ const Timetable = () => {
             className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Select a class</option>
-            {classes.map(cls => (
-              <option key={cls.id} value={cls.id}>
-                {cls.name}
+            {availableClasses.map(cls => (
+              <option key={cls} value={cls}>
+                {cls}
               </option>
             ))}
           </select>
         </div>
       </Card>
 
-      {selectedClass && selectedClassData && (
+      {selectedClass && (
         <>
           {/* Class Info */}
           <Card className="mb-6 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200">
             <div className="p-6">
-              <h2 className="text-2xl font-bold text-blue-900">{selectedClassData.name}</h2>
-              {selectedClassData.teacher && (
-                <p className="text-blue-700 mt-2">Class Teacher: <span className="font-semibold">{selectedClassData.teacher}</span></p>
-              )}
+              <h2 className="text-2xl font-bold text-blue-900">{selectedClass}</h2>
             </div>
           </Card>
 
@@ -200,10 +204,10 @@ const Timetable = () => {
             <div className="p-6">
               {timeSlots.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-gray-600 text-lg">No timetable entries for this class.</p>
+                  <p className="text-gray-600 text-lg">No timetable entries for this class yet.</p>
                   <p className="text-gray-500 mt-2">
                     <button
-                      onClick={() => navigate(`/edit-timetable/${selectedClass}`)}
+                      onClick={() => navigate(`/edit-timetable`)}
                       className="text-blue-600 hover:text-blue-800 font-semibold"
                     >
                       Click here to create timetable
@@ -215,7 +219,7 @@ const Timetable = () => {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b-2 border-gray-200">
                       <tr>
-                        <th className="px-6 py-4 text-left font-semibold text-gray-900 w-32">Time</th>
+                        <th className="px-6 py-4 text-left font-semibold text-gray-900 w-32">Period</th>
                         {days.map(day => (
                           <th key={day} className="px-6 py-4 text-left font-semibold text-gray-900 min-w-40">
                             {day}
@@ -224,20 +228,20 @@ const Timetable = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {timeSlots.map((time) => (
-                        <tr key={time} className="border-b border-gray-100 hover:bg-blue-50 transition-colors">
+                      {timeSlots.map((period) => (
+                        <tr key={period} className="border-b border-gray-100 hover:bg-blue-50 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                            {time}
+                            Period {period}
                           </td>
                           {days.map(day => {
-                            const entry = getEntryForTimeSlot(day, time);
+                            const entry = getEntryForTimeSlot(day, period);
                             return (
                               <td key={day} className="px-6 py-4 whitespace-nowrap">
                                 {entry ? (
-                                  <div className={`px-3 py-2 rounded font-medium text-sm ${getSubjectColor(entry.subject)}`}>
-                                    <p className="font-bold">{entry.subject}</p>
-                                    <p className="text-xs opacity-75">{entry.teacher || 'N/A'}</p>
-                                    <p className="text-xs opacity-75">Room {entry.room || 'N/A'}</p>
+                                  <div className={`px-3 py-2 rounded font-medium text-sm ${getSubjectColor(entry.subject_name)}`}>
+                                    <p className="font-bold">{entry.subject_name}</p>
+                                    <p className="text-xs opacity-75">{entry.teacher_name || 'N/A'}</p>
+                                    <p className="text-xs opacity-75">Room {entry.room_number || 'N/A'}</p>
                                   </div>
                                 ) : (
                                   <div className="px-3 py-2 rounded text-gray-400 text-sm">-</div>

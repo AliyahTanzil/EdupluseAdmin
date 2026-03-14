@@ -51,6 +51,7 @@ function App() {
           <Route path="/timetable" element={<Timetable />} />
           <Route path="/edit-timetable" element={<EditTimetable />} />
           <Route path="/attendance" element={<Attendance />} />
+          <Route path="/mark-attendance" element={<MarkAttendance />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/add-new-course" element={<AddCourse />} />
           <Route path="/edit-course/:id" element={<EditCourse />} />
