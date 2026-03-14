@@ -183,65 +183,76 @@ const MarkAttendance = () => {
       <h1 className="text-4xl font-bold text-gray-800 mb-2">Mark Attendance</h1>
       <p className="text-gray-600 mb-8">Bulk mark attendance for students in a class</p>
 
-      {/* Class & Session Selection */}
-      <Card className="mb-6">
-        <div className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Class Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Class <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Select Class</option>
-                {availableClasses.map(cls => (
-                  <option key={cls} value={cls}>
-                    {cls}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Session Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Session <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={selectedSession}
-                onChange={(e) => setSelectedSession(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="morning">Morning</option>
-                <option value="afternoon">Afternoon</option>
-              </select>
-            </div>
-
-            {/* Date Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={attendanceDate}
-                onChange={(e) => setAttendanceDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {selectedClass && (
+      {loading && availableClasses.length === 0 ? (
+        <LoadingSpinner message="Loading classes and students..." />
+      ) : (
         <>
-          {loading ? (
-            <LoadingSpinner message="Loading students..." />
-          ) : (
+          {/* Class & Session Selection */}
+          <Card className="mb-6">
+            <div className="p-6 space-y-6">
+              {availableClasses.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-600 text-lg">No classes found in the system.</p>
+                  <p className="text-gray-500 mt-2">Please add some students first to create classes.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Class Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Class <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={selectedClass}
+                      onChange={(e) => setSelectedClass(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select Class</option>
+                      {availableClasses.map(cls => (
+                        <option key={cls} value={cls}>
+                          {cls}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Session Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Session <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={selectedSession}
+                      onChange={(e) => setSelectedSession(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="morning">Morning</option>
+                      <option value="afternoon">Afternoon</option>
+                    </select>
+                  </div>
+
+                  {/* Date Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={attendanceDate}
+                      onChange={(e) => setAttendanceDate(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {selectedClass && (
+            <>
+              {loading ? (
+                <LoadingSpinner message="Loading students..." />
+              ) : (
             <>
               {/* Class Info & Statistics */}
               <Card className="mb-6">
