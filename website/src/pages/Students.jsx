@@ -1,21 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Card, LoadingSpinner, ErrorAlert } from '../components/Shared';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, X } from 'lucide-react';
 import { studentsAPI } from '../services/api';
 
 const Students = () => {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const pageSize = 50;
 
   // Fetch students on mount and when page changes
   useEffect(() => {
     loadStudents();
   }, [page]);
+
+  // Handle search filtering
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredStudents(students);
+      setIsSearching(false);
+    } else {
+      setIsSearching(true);
+      const query = searchQuery.toLowerCase();
+      const filtered = students.filter(student => 
+        student.name.toLowerCase().includes(query) ||
+        student.roll.toLowerCase().includes(query) ||
+        student.class.toLowerCase().includes(query) ||
+        (student.email && student.email.toLowerCase().includes(query)) ||
+        (student.phone && student.phone.includes(query))
+      );
+      setFilteredStudents(filtered);
+    }
+  }, [searchQuery, students]);
 
   const loadStudents = async () => {
     try {
@@ -97,6 +119,35 @@ const Students = () => {
           Add New Student
         </Button>
       </div>
+
+      {/* Search Bar */}
+      <Card className="mb-6">
+        <div className="p-6">
+          <div className="relative">
+            <Search className="absolute left-4 top-3 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search by name, roll number, class, email, or phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            )}
+          </div>
+          {isSearching && (
+            <p className="mt-2 text-sm text-gray-600">
+              Found <span className="font-semibold text-blue-600">{filteredStudents.length}</span> student(s)
+            </p>
+          )}
+        </div>
+      </Card>
 
       {students.length > 0 ? (
         <>
