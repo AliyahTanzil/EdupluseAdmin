@@ -66,13 +66,15 @@ router.get('/:id', (req, res) => {
 // Create new subject
 router.post('/', (req, res) => {
   try {
-    const { name, code, description, credit_hours, category } = req.body;
+    const { name, code, description, credit_hours, category, class_name, teacher_id, status } = req.body;
+
+    console.log('Creating subject with:', { name, code, class_name, credit_hours, category, description, teacher_id, status });
 
     // Validation
-    if (!name || !code) {
+    if (!name || !code || !class_name) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: name, code'
+        message: 'Missing required fields: name, code, class_name'
       });
     }
 
@@ -83,9 +85,12 @@ router.post('/', (req, res) => {
       id,
       name,
       code,
+      class: class_name,
       description: description || '',
       credit_hours: credit_hours || 0,
       category: category || 'Academic',
+      teacher_id: teacher_id || null,
+      status: status || 'active',
       created_at: now,
       updated_at: now,
       synced_at: null,
@@ -102,7 +107,7 @@ router.post('/', (req, res) => {
     });
   } catch (error) {
     console.error('Error creating subject:', error);
-    res.status(500).json({ success: false, message: 'Error creating subject' });
+    res.status(500).json({ success: false, message: error.message || 'Error creating subject' });
   }
 });
 
@@ -110,7 +115,7 @@ router.post('/', (req, res) => {
 router.put('/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { name, code, description, credit_hours, category } = req.body;
+    const { name, code, description, credit_hours, category, class_name, teacher_id, status } = req.body;
 
     const existing = db.getSubject(id);
     if (!existing) {
@@ -122,9 +127,12 @@ router.put('/:id', (req, res) => {
     const updates = {
       name: name || existing.name,
       code: code || existing.code,
+      class: class_name || existing.class,
       description: description !== undefined ? description : existing.description,
       credit_hours: credit_hours !== undefined ? credit_hours : existing.credit_hours,
       category: category || existing.category,
+      teacher_id: teacher_id !== undefined ? teacher_id : existing.teacher_id,
+      status: status !== undefined ? status : existing.status,
       updated_at: now,
       synced_at: null
     };

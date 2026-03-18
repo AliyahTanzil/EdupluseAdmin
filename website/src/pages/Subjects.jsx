@@ -64,8 +64,9 @@ const Subjects = () => {
   const columns = [
     { key: 'name', label: 'Name' },
     { key: 'code', label: 'Code' },
-    { key: 'teacher', label: 'Teacher' },
-    { key: 'credits', label: 'Credits' },
+    { key: 'class', label: 'Class' },
+    { key: 'credit_hours', label: 'Credit Hours' },
+    { key: 'category', label: 'Category' },
     { key: 'status', label: 'Status' },
   ];
 

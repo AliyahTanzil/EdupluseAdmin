@@ -44,14 +44,18 @@ const initializeLocalDB = () => {
       name TEXT NOT NULL,
       email TEXT UNIQUE,
       phone TEXT,
-      subject TEXT,
+      subject_id TEXT,
       qualification TEXT,
-      experience INTEGER,
+      experience INTEGER DEFAULT 0,
+      classes_assigned TEXT,
+      hire_date DATETIME,
+      status TEXT DEFAULT 'active',
       photo_url TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       synced_at DATETIME,
-      is_deleted INTEGER DEFAULT 0
+      is_deleted INTEGER DEFAULT 0,
+      FOREIGN KEY (subject_id) REFERENCES subjects(id)
     )
   `);
 
@@ -60,14 +64,18 @@ const initializeLocalDB = () => {
     CREATE TABLE IF NOT EXISTS subjects (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      code TEXT NOT NULL UNIQUE,
+      code TEXT NOT NULL,
+      class TEXT NOT NULL,
       description TEXT,
+      credit_hours REAL DEFAULT 0,
+      category TEXT DEFAULT 'Academic',
       teacher_id TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       synced_at DATETIME,
       is_deleted INTEGER DEFAULT 0,
-      FOREIGN KEY (teacher_id) REFERENCES teachers(id)
+      FOREIGN KEY (teacher_id) REFERENCES teachers(id),
+      UNIQUE(name, code, class)
     )
   `);
 
@@ -361,16 +369,21 @@ const getAllSubjects = (limit = 100, offset = 0) => {
 
 const insertSubject = (subject) => {
   const stmt = db.prepare(`
-    INSERT INTO subjects (id, name, code, description, credit_hours, category)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO subjects (id, name, code, class, description, credit_hours, category, created_at, updated_at, synced_at, is_deleted)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   return stmt.run(
     subject.id,
     subject.name,
     subject.code,
+    subject.class,
     subject.description,
     subject.credit_hours,
-    subject.category
+    subject.category,
+    subject.created_at,
+    subject.updated_at,
+    subject.synced_at,
+    subject.is_deleted
   );
 };
 

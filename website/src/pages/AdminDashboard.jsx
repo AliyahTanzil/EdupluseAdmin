@@ -1,31 +1,113 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, Button } from '../components/Shared';
-import { Users, BookOpen, BarChart3, Settings, LogOut, User, Clock, Zap, FileText, Wifi, ChevronDown } from 'lucide-react';
+import { Users, BookOpen, BarChart3, Settings, LogOut, User, Clock, Zap, FileText, Wifi, ChevronDown, TrendingUp, AlertCircle } from 'lucide-react';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    totalTeachers: 0,
+    totalClasses: 0,
+    totalAttendanceToday: 0,
+    presentStudents: 0,
+    absentStudents: 0,
+    pendingTasks: 0,
+    systemHealth: 'Good'
+  });
+  const [loading, setLoading] = useState(true);
 
-  const handleLogout = async () => {
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  const fetchDashboardStats = async () => {
     try {
-      setShowProfileMenu(false);
-      logout();
-      // Navigate after a brief delay to allow state to update
-      await new Promise(resolve => setTimeout(resolve, 50));
-      navigate('/login', { replace: true });
+      const token = localStorage.getItem('authToken');
+      const [studentsRes, teachersRes, attendanceRes] = await Promise.all([
+        fetch('http://localhost:5001/api/students', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('http://localhost:5001/api/teachers', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`http://localhost:5001/api/attendance?date=${new Date().toISOString().split('T')[0]}`, { headers: { 'Authorization': `Bearer ${token}` } })
+      ]);
+
+      const studentsData = await studentsRes.json();
+      const teachersData = await teachersRes.json();
+      const attendanceData = await attendanceRes.json();
+
+      setStats({
+        totalStudents: studentsData.data?.length || 0,
+        totalTeachers: teachersData.data?.length || 0,
+        totalClasses: Math.ceil((studentsData.data?.length || 0) / 30),
+        totalAttendanceToday: attendanceData.data?.length || 0,
+        presentStudents: attendanceData.data?.filter(a => a.status === 'present').length || 0,
+        absentStudents: attendanceData.data?.filter(a => a.status === 'absent').length || 0,
+        pendingTasks: 3,
+        systemHealth: 'Good'
+      });
     } catch (error) {
-      console.error('Logout error:', error);
-      navigate('/login', { replace: true });
+      console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    setShowProfileMenu(false);
+    navigate('/logout');
   };
 
   const handleProfileClick = () => {
     navigate('/profile-settings');
     setShowProfileMenu(false);
   };
+
+  const statCards = [
+    {
+      title: 'Total Students',
+      value: stats.totalStudents,
+      icon: Users,
+      color: 'blue',
+      trend: '+12% from last month'
+    },
+    {
+      title: 'Total Teachers',
+      value: stats.totalTeachers,
+      icon: User,
+      color: 'green',
+      trend: '+5% from last month'
+    },
+    {
+      title: 'Total Classes',
+      value: stats.totalClasses,
+      icon: BookOpen,
+      color: 'purple',
+      trend: 'System generated'
+    },
+    {
+      title: 'Attendance Today',
+      value: `${stats.presentStudents}/${stats.totalAttendanceToday}`,
+      icon: BarChart3,
+      color: 'orange',
+      trend: `${stats.absentStudents} absent`
+    },
+    {
+      title: 'Pending Tasks',
+      value: stats.pendingTasks,
+      icon: AlertCircle,
+      color: 'red',
+      trend: 'Requires attention'
+    },
+    {
+      title: 'System Health',
+      value: stats.systemHealth,
+      icon: Zap,
+      color: 'cyan',
+      trend: 'All systems operational'
+    }
+  ];
 
   const menuItems = [
     {
@@ -166,9 +248,46 @@ const AdminDashboard = () => {
         </div>
       </div>
 
+      {/* Statistics Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Overview & Statistics</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {statCards.map((stat, index) => {
+            const Icon = stat.icon;
+            const colorMap = {
+              blue: 'bg-blue-50 text-blue-700 border-blue-200',
+              green: 'bg-green-50 text-green-700 border-green-200',
+              purple: 'bg-purple-50 text-purple-700 border-purple-200',
+              orange: 'bg-orange-50 text-orange-700 border-orange-200',
+              red: 'bg-red-50 text-red-700 border-red-200',
+              cyan: 'bg-cyan-50 text-cyan-700 border-cyan-200'
+            };
+            return (
+              <Card key={index} className={`border-2 ${colorMap[stat.color]}`}>
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
+                      <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                    </div>
+                    <Icon className="text-2xl opacity-50" />
+                  </div>
+                  <div className="flex items-center gap-1 text-xs font-medium">
+                    <TrendingUp size={14} className="text-green-600" />
+                    <span className="text-gray-600">{stat.trend}</span>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Management Functions */}
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Administrative Functions</h2>
+      </div>
+
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-8">Administrative Functions</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {menuItems.map((item, index) => {
             const Icon = item.icon;

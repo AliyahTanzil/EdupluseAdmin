@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '../components/Shared';
 import { ArrowLeft, Loader } from 'lucide-react';
-import { teachersAPI } from '../services/api';
+import { teachersAPI, subjectsAPI } from '../services/api';
 import ErrorAlert from '../components/Shared/ErrorAlert';
 import SuccessAlert from '../components/Shared/SuccessAlert';
 
@@ -11,17 +11,50 @@ const AddNewTeacher = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [subjects, setSubjects] = useState([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    subject: '',
-    class: '',
-    experience: ''
+    subject_id: '',
+    classes_assigned: '',
+    experience: '',
+    qualification: ''
   });
 
-  const subjects = ['Mathematics', 'English', 'Science', 'History', 'Geography', 'PE', 'Art', 'Music', 'Computer Science'];
   const classes = ['9-A', '9-B', '10-A', '10-B', '11-A', '11-B', '12-A', '12-B'];
+
+  // Load subjects on component mount
+  useEffect(() => {
+    loadSubjects();
+  }, []);
+
+  const loadSubjects = async () => {
+    try {
+      setSubjectsLoading(true);
+      console.log('Loading subjects...');
+      const response = await subjectsAPI.getAll({ limit: 100, offset: 0 });
+      console.log('Subjects response:', response);
+      
+      if (response.success && response.data && Array.isArray(response.data)) {
+        console.log('Subjects loaded:', response.data);
+        setSubjects(response.data);
+      } else if (response.data && Array.isArray(response.data)) {
+        // Sometimes data comes without success flag
+        console.log('Subjects loaded (no success flag):', response.data);
+        setSubjects(response.data);
+      } else {
+        console.warn('No subjects found or invalid response format:', response);
+        setSubjects([]);
+      }
+    } catch (err) {
+      console.error('Failed to load subjects:', err);
+      setSubjects([]);
+    } finally {
+      setSubjectsLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,13 +72,49 @@ const AddNewTeacher = () => {
       setError(null);
 
       // Validate required fields
-      if (!formData.name || !formData.email || !formData.phone || !formData.subject || !formData.class) {
+      if (!formData.name || !formData.email || !formData.phone || !formData.subject_id || !formData.classes_assigned) {
         setError('Please fill all required fields (Name, Email, Phone, Subject, Class)');
         setLoading(false);
         return;
       }
 
-      const response = await teachersAPI.create(formData);
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setError('Please enter a valid email address');
+        setLoading(false);
+        return;
+      }
+
+      // Validate phone format - must have at least 10 digits
+      const phoneDigits = formData.phone.replace(/\D/g, '');
+      if (phoneDigits.length < 10) {
+        setError('Please enter a valid phone number (at least 10 digits)');
+        setLoading(false);
+        return;
+      }
+
+      // Validate name length
+      if (formData.name.trim().length < 2) {
+        setError('Teacher name must be at least 2 characters long');
+        setLoading(false);
+        return;
+      }
+
+      // Prepare data for backend
+      const submitData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        subject_id: formData.subject_id,
+        classes_assigned: formData.classes_assigned,
+        experience: formData.experience ? parseInt(formData.experience) : 0,
+        qualification: formData.qualification || '',
+        hire_date: new Date().toISOString(),
+        status: 'active'
+      };
+
+      const response = await teachersAPI.create(submitData);
       
       if (response.success) {
         setSuccess(true);
@@ -53,9 +122,10 @@ const AddNewTeacher = () => {
           name: '',
           email: '',
           phone: '',
-          subject: '',
-          class: '',
-          experience: ''
+          subject_id: '',
+          classes_assigned: '',
+          experience: '',
+          qualification: ''
         });
         
         setTimeout(() => {
@@ -151,17 +221,23 @@ const AddNewTeacher = () => {
                   Subject <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="subject"
-                  value={formData.subject}
+                  name="subject_id"
+                  value={formData.subject_id}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={subjectsLoading}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  <option value="">Select Subject</option>
+                  <option value="">
+                    {subjectsLoading ? 'Loading subjects...' : subjects.length === 0 ? 'No subjects available' : 'Select Subject'}
+                  </option>
                   {subjects.map(subject => (
-                    <option key={subject} value={subject}>{subject}</option>
+                    <option key={subject.id} value={subject.id}>{subject.name}</option>
                   ))}
                 </select>
+                {subjects.length === 0 && !subjectsLoading && (
+                  <p className="text-xs text-red-500 mt-1">No subjects found. Please create subjects first.</p>
+                )}
               </div>
             </div>
 
@@ -172,8 +248,8 @@ const AddNewTeacher = () => {
                   Class <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="class"
-                  value={formData.class}
+                  name="classes_assigned"
+                  value={formData.classes_assigned}
                   onChange={handleChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -183,6 +259,20 @@ const AddNewTeacher = () => {
                     <option key={cls} value={cls}>{cls}</option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Qualification
+                </label>
+                <input
+                  type="text"
+                  name="qualification"
+                  value={formData.qualification}
+                  onChange={handleChange}
+                  placeholder="e.g., B.Ed, M.Sc"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
 
               <div>

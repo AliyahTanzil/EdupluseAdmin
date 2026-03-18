@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { Bell, Search, User, ChevronDown } from 'lucide-react';
 
 /**
@@ -7,10 +9,22 @@ import { Bell, Search, User, ChevronDown } from 'lucide-react';
  */
 export const Navbar = ({ onMenuToggle }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [notifications] = useState([ // notifications is used, but setNotifications is not
     { id: 1, message: '10 students absent today', time: '5 mins ago' },
     { id: 2, message: 'New assignment from Math', time: '1 hour ago' },
   ]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Logout error:', error);
+      navigate('/login', { replace: true });
+    }
+  };
 
   return (
     <nav className="bg-gradient-to-r from-blue-600 to-blue-400 text-white shadow-md sticky top-0 z-40">
@@ -85,16 +99,16 @@ export const Navbar = ({ onMenuToggle }) => {
 
             {/* Profile Dropdown */}
             <div className="absolute right-0 mt-2 w-48 bg-white text-gray-900 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-              <a href="#" className="block px-4 py-3 hover:bg-gray-50 border-b border-gray-100">
+              <div className="px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-default">
                 <p className="font-semibold">Admin</p>
                 <p className="text-xs text-gray-500">admin@school.edu</p>
-              </a>
-              <a href="#" className="block px-4 py-2 text-sm hover:bg-gray-50 border-b border-gray-100">
+              </div>
+              <button type="button" onClick={() => navigate('/profile-settings')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 border-b border-gray-100">
                 Profile Settings
-              </a>
-              <a href="#" className="block px-4 py-2 text-sm hover:bg-gray-50">
+              </button>
+              <button type="button" onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600">
                 Logout
-              </a>
+              </button>
             </div>
           </div>
         </div>

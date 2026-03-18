@@ -55,8 +55,16 @@ const EditSubject = () => {
       setError(null);
 
       // Validate required fields
-      if (!formData.name || !formData.code || !formData.credits) {
-        setError('Please fill all required fields (Name, Code, Credits)');
+      if (!formData.name || !formData.code || formData.credit_hours === '' || !formData.class_name) {
+        setError('Please fill all required fields (Name, Code, Credit Hours, Class)');
+        setSaving(false);
+        return;
+      }
+
+      // Validate credit hours is a positive number
+      const creditHours = parseFloat(formData.credit_hours);
+      if (isNaN(creditHours) || creditHours <= 0) {
+        setError('Credit hours must be a positive number');
         setSaving(false);
         return;
       }
@@ -149,30 +157,40 @@ const EditSubject = () => {
               </div>
             </div>
 
-            {/* Row 2: Teacher and Credits */}
+            {/* Row 2: Class and Credit Hours */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Teacher
+                  Class <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  name="teacher"
-                  value={formData.teacher || ''}
+                <select
+                  name="class_name"
+                  value={formData.class_name || ''}
                   onChange={handleChange}
-                  placeholder="e.g., Dr. Smith"
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                >
+                  <option value="">Select Class</option>
+                  <option value="9-A">Class 9-A</option>
+                  <option value="9-B">Class 9-B</option>
+                  <option value="10-A">Class 10-A</option>
+                  <option value="10-B">Class 10-B</option>
+                  <option value="11-A">Class 11-A</option>
+                  <option value="11-B">Class 11-B</option>
+                  <option value="12-A">Class 12-A</option>
+                  <option value="12-B">Class 12-B</option>
+                </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Credits <span className="text-red-500">*</span>
+                  Credit Hours <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
-                  name="credits"
-                  value={formData.credits}
+                  step="0.5"
+                  name="credit_hours"
+                  value={formData.credit_hours || ''}
                   onChange={handleChange}
                   placeholder="e.g., 4"
                   min="1"
@@ -183,20 +201,55 @@ const EditSubject = () => {
               </div>
             </div>
 
+            {/* Row 3: Category and Teacher ID */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Category
+                </label>
+                <select
+                  name="category"
+                  value={formData.category || 'Academic'}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="Academic">Academic</option>
+                  <option value="Science">Science</option>
+                  <option value="Arts">Arts</option>
+                  <option value="Commerce">Commerce</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Teacher (Optional)
+                </label>
+                <input
+                  type="text"
+                  name="teacher_id"
+                  value={formData.teacher_id || ''}
+                  onChange={handleChange}
+                  placeholder="e.g., teacher ID"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
             {/* Status */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status <span className="text-red-500">*</span>
+                Status
               </label>
               <select
                 name="status"
-                value={formData.status || 'Active'}
+                value={formData.status || 'active'}
                 onChange={handleChange}
-                required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
               </select>
             </div>
 

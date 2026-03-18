@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Layout from './layouts/Layout';
+import SessionWarning from './components/SessionWarning';
+import OfflineNotification from './components/OfflineNotification';
 
 // Auth Pages
 import Landing from './pages/Landing';
@@ -14,6 +16,9 @@ import Unauthorized from './pages/Unauthorized';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
+import ClassTeacherDashboard from './pages/ClassTeacherDashboard';
+import SubjectHeadDashboard from './pages/SubjectHeadDashboard';
+import DepartmentalHeadDashboard from './pages/DepartmentalHeadDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import ParentDashboard from './pages/ParentDashboard';
 
@@ -42,18 +47,21 @@ import EditSubject from './pages/EditSubject';
 import GenerateReport from './pages/GenerateReport';
 import Settings from './pages/Settings';
 import ProfileSettings from './pages/ProfileSettings';
+import Logout from './pages/Logout';
 import './App.css'
 
-function App() {
+function AppContent() {
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <AuthProvider>
-        <Routes>
+    <>
+      <SessionWarning />
+      <OfflineNotification />
+      <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="/logout" element={<Logout />} />
           
           {/* Role-based Dashboards */}
           <Route
@@ -79,6 +87,34 @@ function App() {
             element={
               <ProtectedRoute requiredRoles={['teacher']}>
                 <TeacherDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Role-specific Teacher Dashboards */}
+          <Route
+            path="/class-teacher-dashboard"
+            element={
+              <ProtectedRoute requiredRoles={['teacher']} requiredTeacherTypes={['class_teacher']}>
+                <ClassTeacherDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/subject-head-dashboard"
+            element={
+              <ProtectedRoute requiredRoles={['teacher']} requiredTeacherTypes={['subject_head']}>
+                <SubjectHeadDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/departmental-head-dashboard"
+            element={
+              <ProtectedRoute requiredRoles={['teacher']} requiredTeacherTypes={['departmental_head']}>
+                <DepartmentalHeadDashboard />
               </ProtectedRoute>
             }
           />
@@ -148,9 +184,17 @@ function App() {
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+      </>
+  );
+}
+
+function App() {
+  return (
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <AuthProvider>
+        <AppContent />
       </AuthProvider>
     </Router>
   )
 }
-
 export default App

@@ -25,6 +25,7 @@ initializeLocalDB();
 initializeFirebase();
 
 // Routes
+app.use('/api/auth', require('./routes/auth'));
 app.use('/api/students', require('./routes/students'));
 app.use('/api/teachers', require('./routes/teachers'));
 app.use('/api/attendance', require('./routes/attendance'));
@@ -34,6 +35,7 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/devices', require('./routes/devices'));
 app.use('/api/sync', require('./routes/sync'));
 app.use('/api/health', require('./routes/health'));
+app.use('/api/school-structure', require('./routes/schoolStructure'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

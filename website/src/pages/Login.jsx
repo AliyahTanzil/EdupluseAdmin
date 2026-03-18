@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, Button, ErrorAlert } from '../components/Shared';
@@ -6,7 +6,7 @@ import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, error: authError, isAuthenticated } = useAuth();
+  const { login, error: authError, isAuthenticated, user } = useAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,11 +14,27 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // If already logged in, redirect
-  if (isAuthenticated) {
-    navigate('/');
-    return null;
-  }
+  // If already logged in, redirect to role dashboard
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    switch (user.role) {
+      case 'admin':
+        navigate('/admin-dashboard', { replace: true });
+        break;
+      case 'teacher':
+        navigate('/teacher-dashboard', { replace: true });
+        break;
+      case 'student':
+        navigate('/student-dashboard', { replace: true });
+        break;
+      case 'parent':
+        navigate('/parent-dashboard', { replace: true });
+        break;
+      default:
+        navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,6 +73,9 @@ const Login = () => {
     }
   };
 
+  // Determine which error to show (prioritize local error over context error)
+  const displayError = error || authError;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -71,8 +90,7 @@ const Login = () => {
           <div className="p-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Welcome Back</h2>
 
-            {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
-            {authError && <ErrorAlert message={authError} onClose={() => setError(null)} />}
+            {displayError && <ErrorAlert message={displayError} onClose={() => setError(null)} />}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email Field */}
