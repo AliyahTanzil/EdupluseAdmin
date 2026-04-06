@@ -7,17 +7,49 @@ const schoolStructure = require('../config/schoolStructure');
 // Mock user database (replace with real database)
 // Updated with proper school hierarchy structure
 const users = [
-  // ADMIN
+  // ADMIN - CEO (Super Admin with all school access)
   {
     id: '1',
     email: 'admin@school.com',
     password: 'password', // In real app, this should be hashed
     name: 'Principal Admin',
     role: 'admin',
+    adminType: 'ceo',  // CEO admin type
+    assignedSchools: ['primary', 'junior_secondary', 'senior_secondary'],  // All schools
     isSuperUser: true,
     phone: '+1-800-123-4567',
     address: '123 Education Street, School City',
     joinDate: '2023-01-15'
+  },
+
+  // ADMIN - PRINCIPAL (Can manage Junior and Senior Secondary)
+  {
+    id: '1a',
+    email: 'principal@school.com',
+    password: 'password',
+    name: 'Dr. Sarah Principal',
+    role: 'admin',
+    adminType: 'principal',  // Principal admin type
+    assignedSchools: ['junior_secondary', 'senior_secondary'],  // Two schools
+    isSuperUser: false,
+    phone: '+1-800-234-5678',
+    address: '456 School Road, Education City',
+    joinDate: '2023-02-01'
+  },
+
+  // ADMIN - REGULAR ADMIN (Can manage single school)
+  {
+    id: '1b',
+    email: 'regularadmin@school.com',
+    password: 'password',
+    name: 'John Regular Admin',
+    role: 'admin',
+    adminType: 'admin',  // Regular admin type
+    assignedSchools: ['senior_secondary'],  // Single school
+    isSuperUser: false,
+    phone: '+1-800-345-6789',
+    address: '789 Academy Street, Learning City',
+    joinDate: '2023-03-01'
   },
 
   // REGULAR TEACHER (Primary School - Class 4)
@@ -226,12 +258,64 @@ router.post('/login', async (req, res) => {
       });
     }
 
+<<<<<<< HEAD
     // Generate JWT token
+=======
+    // Determine user type and school type based on user object
+    let userType = USER_TYPES.ADMIN;
+    let schoolType = SCHOOL_TYPES.PRIMARY;
+    let roleObj = null;
+
+    if (user.role === 'teacher') {
+      userType = USER_TYPES.TEACHER;
+      schoolType = user.schoolLevel === 'primary' ? SCHOOL_TYPES.PRIMARY : SCHOOL_TYPES.SENIOR_SECONDARY;
+      
+      // Assign role based on teacher type
+      if (user.teacherType === 'class_teacher') {
+        roleObj = TEACHER_ROLES.CLASS_MASTER;
+      } else {
+        roleObj = TEACHER_ROLES.ORDINARY_TEACHER;
+      }
+    } else if (user.role === 'admin') {
+      userType = USER_TYPES.ADMIN;
+      schoolType = user.schoolLevel === 'primary' ? SCHOOL_TYPES.PRIMARY : SCHOOL_TYPES.SENIOR_SECONDARY;
+      
+      // Assign admin role (for demo, all admins are super admin)
+      if (schoolType === SCHOOL_TYPES.PRIMARY) {
+        roleObj = ADMIN_ROLES.HEAD_MASTER;
+      } else {
+        roleObj = ADMIN_ROLES.PRINCIPAL;
+      }
+    } else if (user.role === 'secretary') {
+      userType = USER_TYPES.ADMIN;
+      schoolType = user.schoolLevel === 'primary' ? SCHOOL_TYPES.PRIMARY : SCHOOL_TYPES.SENIOR_SECONDARY;
+      roleObj = ADMIN_ROLES.SECRETARY;
+    } else if (user.role === 'treasurer') {
+      userType = USER_TYPES.ADMIN;
+      schoolType = user.schoolLevel === 'primary' ? SCHOOL_TYPES.PRIMARY : SCHOOL_TYPES.SENIOR_SECONDARY;
+      roleObj = ADMIN_ROLES.TREASURER;
+    }
+
+    // Generate JWT token with enhanced payload (includes all user info for middleware)
+>>>>>>> 041b17aa (modification)
     const token = jwt.sign(
       {
         id: user.id,
         email: user.email,
+<<<<<<< HEAD
         role: user.role
+=======
+        name: user.name,
+        role: user.role,
+        userType,
+        schoolType,
+        roleId: roleObj?.id,
+        adminType: user.adminType || null,
+        assignedSchools: user.assignedSchools || [],
+        isSuperUser: user.isSuperUser || false,
+        teacherType: user.teacherType || null,
+        schoolLevel: user.schoolLevel || null,
+>>>>>>> 041b17aa (modification)
       },
       JWT_SECRET,
       { expiresIn: '7d' }
@@ -239,6 +323,19 @@ router.post('/login', async (req, res) => {
 
     // Return user data (without password)
     const { password: _, ...userWithoutPassword } = user;
+<<<<<<< HEAD
+=======
+    const responseUser = {
+      ...userWithoutPassword,
+      userType,
+      schoolType,
+      role: roleObj || { id: user.role, name: user.role },
+      // Include admin hierarchy fields if present
+      adminType: user.adminType || undefined,
+      assignedSchools: user.assignedSchools || [],
+      isSuperUser: user.isSuperUser || false
+    };
+>>>>>>> 041b17aa (modification)
 
     res.json({
       success: true,
@@ -272,7 +369,10 @@ router.post('/register', async (req, res) => {
       classId,
       className,
       stream,
-      phone 
+      phone,
+      // New admin hierarchy fields
+      adminType,
+      assignedSchools
     } = req.body;
 
     // Validation
@@ -280,6 +380,14 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Name, email, password, and role are required'
+      });
+    }
+
+    // Additional validation for admin role
+    if (role === 'admin' && !adminType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Admin account type is required'
       });
     }
 
@@ -344,6 +452,15 @@ router.post('/register', async (req, res) => {
         }] : [],
         subjects: [],
         department: null
+      };
+    } else if (role === 'admin') {
+      // Add admin-specific fields including new hierarchy fields
+      newUser = {
+        ...newUser,
+        adminType: adminType,
+        assignedSchools: assignedSchools || [],
+        isSuperUser: adminType === 'ceo',  // CEO is lowercase
+        createdAt: new Date()
       };
     }
 

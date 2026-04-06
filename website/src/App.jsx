@@ -53,8 +53,11 @@ import Settings from './pages/Settings';
 import ProfileSettings from './pages/ProfileSettings';
 import Logout from './pages/Logout';
 import Grades from './pages/Grades';
+<<<<<<< HEAD
 import StudentResults from './pages/StudentResults';
 import ReportCardPage from './pages/ReportCard';
+=======
+>>>>>>> 041b17aa (modification)
 import FinanceDashboard from './pages/FinanceDashboard';
 import './App.css'
 
@@ -177,9 +180,12 @@ function AppContent() {
             <Route path="/generate-report" element={<GenerateReport />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/grades" element={<Grades />} />
+<<<<<<< HEAD
             <Route path="/student-results/:id" element={<StudentResults />} />
             <Route path="/report-card" element={<ReportCardPage />} />
             <Route path="/report-card/:id" element={<ReportCardPage />} />
+=======
+>>>>>>> 041b17aa (modification)
             <Route path="/class-attendance" element={<ClassAttendance />} />
             <Route path="/class-subjects" element={<ClassSubjects />} />
             <Route path="/class-timetable" element={<ClassTimetable />} />

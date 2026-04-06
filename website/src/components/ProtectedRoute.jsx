@@ -54,14 +54,24 @@ export const ProtectedRoute = ({
 
   // Check if admin-only access required
   if (requireAdmin) {
+<<<<<<< HEAD
     if (baseRole !== 'admin') {
+=======
+    const roleStr = typeof user.role === 'object' ? user.role?.id : user.role;
+    if (roleStr !== 'admin') {
+>>>>>>> 041b17aa (modification)
       return <Navigate to="/unauthorized" replace />;
     }
   }
 
   // Check role requirements
   if (requiredRoles.length > 0) {
+<<<<<<< HEAD
     if (!requiredRoles.includes(baseRole)) {
+=======
+    const roleStr = typeof user.role === 'object' ? user.role?.id : user.role;
+    if (!requiredRoles.includes(roleStr)) {
+>>>>>>> 041b17aa (modification)
       return <Navigate to="/unauthorized" replace />;
     }
   }

@@ -17,6 +17,60 @@ db.pragma('foreign_keys = ON');
 const initializeLocalDB = () => {
   console.log('Initializing local SQLite database...');
 
+  // Users table (for authentication and user management)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL,
+      full_name TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'student',
+      admin_type TEXT,
+      teacher_type TEXT,
+      school_level TEXT,
+      section TEXT,
+      class_id TEXT,
+      class_name TEXT,
+      stream TEXT,
+      assigned_schools TEXT DEFAULT '[]',
+      assigned_classes TEXT DEFAULT '[]',
+      subjects TEXT DEFAULT '[]',
+      department TEXT,
+      phone TEXT,
+      address TEXT,
+      is_super_user INTEGER DEFAULT 0,
+      is_suspended INTEGER DEFAULT 0,
+      permissions TEXT DEFAULT '[]',
+      children TEXT DEFAULT '[]',
+      join_date DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Schools table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS schools (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      code TEXT NOT NULL UNIQUE,
+      school_level TEXT NOT NULL,
+      address TEXT,
+      city TEXT DEFAULT 'Freetown',
+      state TEXT DEFAULT 'Western Area',
+      country TEXT DEFAULT 'Sierra Leone',
+      phone TEXT,
+      email TEXT,
+      website TEXT,
+      principal_name TEXT,
+      total_students INTEGER DEFAULT 0,
+      total_teachers INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'active',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Students table
   db.exec(`
     CREATE TABLE IF NOT EXISTS students (
@@ -149,6 +203,83 @@ const initializeLocalDB = () => {
       error_message TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       synced_at DATETIME
+    )
+  `);
+
+  // Grades table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS grades (
+      id TEXT PRIMARY KEY,
+      student_id TEXT NOT NULL,
+      subject_id TEXT NOT NULL,
+      class_id TEXT,
+      score REAL NOT NULL,
+      grade TEXT,
+      term TEXT NOT NULL,
+      academic_year TEXT NOT NULL,
+      exam_type TEXT DEFAULT 'test',
+      remarks TEXT,
+      graded_by TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      is_deleted INTEGER DEFAULT 0,
+      FOREIGN KEY (student_id) REFERENCES students(id),
+      FOREIGN KEY (subject_id) REFERENCES subjects(id)
+    )
+  `);
+
+  // Assignments table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS assignments (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT,
+      class_id TEXT NOT NULL,
+      subject_id TEXT,
+      teacher_id TEXT,
+      due_date DATE,
+      max_score REAL DEFAULT 100,
+      status TEXT DEFAULT 'active',
+      submitted INTEGER DEFAULT 0,
+      student_id TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      is_deleted INTEGER DEFAULT 0,
+      FOREIGN KEY (subject_id) REFERENCES subjects(id),
+      FOREIGN KEY (teacher_id) REFERENCES teachers(id)
+    )
+  `);
+
+  // Exams table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS exams (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      subject_id TEXT NOT NULL,
+      class_id TEXT NOT NULL,
+      exam_date DATE NOT NULL,
+      duration_minutes INTEGER DEFAULT 120,
+      max_score REAL DEFAULT 100,
+      exam_type TEXT DEFAULT 'midterm',
+      status TEXT DEFAULT 'scheduled',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      is_deleted INTEGER DEFAULT 0,
+      FOREIGN KEY (subject_id) REFERENCES subjects(id)
+    )
+  `);
+
+  // Class enrollments table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS class_enrollments (
+      id TEXT PRIMARY KEY,
+      student_id TEXT NOT NULL,
+      class_id TEXT NOT NULL,
+      academic_year TEXT,
+      status TEXT DEFAULT 'active',
+      enrolled_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (student_id) REFERENCES students(id),
+      UNIQUE(student_id, class_id, academic_year)
     )
   `);
 
@@ -480,6 +611,7 @@ const logSyncAction = (syncLog) => {
 module.exports = {
   db,
   getDatabase: () => db,
+  getLocalDB: () => db,
   initializeLocalDB,
   // Student operations
   getStudent,

@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+=======
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+>>>>>>> 041b17aa (modification)
 import { getApiBaseUrlSync } from '../config/apiConfig';
 
 const AuthContext = createContext();
@@ -149,11 +153,16 @@ export const AuthProvider = ({ children }) => {
         id: data.user.id,
         email: data.user.email,
         name: data.user.name,
+<<<<<<< HEAD
         // Use userType as the base role for routing (matches ProtectedRoute/Sidebar checks)
         // userType is always 'admin', 'teacher', 'student', or 'parent'
         role: data.user.userType || (typeof data.user.role === 'string' ? data.user.role : (data.user.role?.id || data.user.role)),
         // Store the specific role ID (e.g., 'head_master', 'class_master', 'ceo')
         roleId: typeof data.user.role === 'object' ? data.user.role.id : data.user.role,
+=======
+        // Store the full role object for permissions/SchoolSelection
+        role: typeof data.user.role === 'string' ? data.user.role : (data.user.role?.id || data.user.role),
+>>>>>>> 041b17aa (modification)
         roleObj: typeof data.user.role === 'object' ? data.user.role : null,
         // Admin hierarchy fields
         adminType: data.user.adminType || null,

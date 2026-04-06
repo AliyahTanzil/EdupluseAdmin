@@ -4,6 +4,7 @@
  * Automatically syncs when online
  */
 
+<<<<<<< HEAD
 // D-6 fix: Use canonical config/apiConfig.js instead of duplicate port detection
 import { getApiBaseUrl, getApiBaseUrlSync } from '../config/apiConfig.js';
 
@@ -12,6 +13,38 @@ let API_BASE_URL = getApiBaseUrlSync();
 // Initialize with async detection  
 (async () => {
   API_BASE_URL = await getApiBaseUrl();
+=======
+// Detect backend port dynamically
+const detectBackendPort = async () => {
+  const ports = [5001, 5002, 5003, 5004, 5005];
+  
+  for (const port of ports) {
+    try {
+      const response = await fetch(`http://localhost:${port}/api/health`, {
+        method: 'GET',
+        timeout: 1000,
+      });
+      if (response.ok) {
+        console.log(`✅ Backend found on port ${port}`);
+        return port;
+      }
+    } catch (error) {
+      // Port not available, continue
+    }
+  }
+  
+  // Default to 5001 if no port found
+  console.warn('⚠️ Could not detect backend port, using default 5001');
+  return 5001;
+};
+
+let API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+// Initialize backend port detection
+(async () => {
+  const port = await detectBackendPort();
+  API_BASE_URL = `http://localhost:${port}/api`;
+>>>>>>> 041b17aa (modification)
 })();
 
 // Helper function to make API calls

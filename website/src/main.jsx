@@ -2,7 +2,11 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
+<<<<<<< HEAD
 import { getApiBaseUrl } from './config/apiConfig.js'
+=======
+import { detectBackendPort } from './utils/apiConfig.js'
+>>>>>>> 041b17aa (modification)
 
 // Suppress extension communication errors
 window.addEventListener('error', (event) => {
@@ -22,6 +26,7 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
+<<<<<<< HEAD
 // D-9 fix: Render immediately instead of waiting for backend port detection
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -32,4 +37,20 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 // Pre-warm backend port detection in the background (non-blocking)
 getApiBaseUrl().catch((error) => {
   console.warn('Backend port detection failed:', error);
+=======
+// Initialize backend port detection
+detectBackendPort().then(() => {
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+}).catch((error) => {
+  console.error('Failed to initialize app:', error);
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+>>>>>>> 041b17aa (modification)
 });
