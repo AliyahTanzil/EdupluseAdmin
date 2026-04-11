@@ -46,9 +46,9 @@ const Grades = () => {
       const apiBase = getApiBaseUrlSync();
       let url = `${apiBase}/grades`;
 
-      if (user.role === 'TEACHER' && filters.classId) {
+      if (user.role === 'teacher' && filters.classId) {
         url = `${apiBase}/grades/class/${filters.classId}`;
-      } else if (user.role === 'STUDENT') {
+      } else if (user.role === 'student') {
         url = `${apiBase}/grades/student/${user.id}`;
       }
 
@@ -231,7 +231,7 @@ const Grades = () => {
           {/* Header */}
           <div className="grades-header">
             <h1>📚 Grades Management</h1>
-            {(user.role === 'ADMIN' || user.role === 'TEACHER') && (
+            {(user.role === 'admin' || user.role === 'teacher') && (
               <button className="btn-primary" onClick={handleAddNew}>
                 + Add Grade
               </button>
@@ -319,7 +319,7 @@ const Grades = () => {
               data={grades}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              showActions={user.role === 'ADMIN' || user.role === 'TEACHER'}
+              showActions={user.role === 'admin' || user.role === 'teacher'}
             />
           )}
 

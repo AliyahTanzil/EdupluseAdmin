@@ -3,6 +3,7 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const db = require('../database/local');
 const syncService = require('../services/syncService');
+const { requireRole } = require('../middleware/auth');
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -149,7 +150,7 @@ router.get('/teacher/:teacherId', (req, res) => {
 });
 
 // Create new period
-router.post('/period', (req, res) => {
+router.post('/period', requireRole(['admin']), (req, res) => {
   try {
     const { class: classname, day, period_number, start_time, end_time, subject_id, teacher_id, room_number } = req.body;
 
@@ -210,7 +211,7 @@ router.post('/period', (req, res) => {
 });
 
 // Update period
-router.put('/period/:id', (req, res) => {
+router.put('/period/:id', requireRole(['admin']), (req, res) => {
   try {
     const { id } = req.params;
     const { start_time, end_time, subject_id, teacher_id, room_number } = req.body;
@@ -260,7 +261,7 @@ router.put('/period/:id', (req, res) => {
 });
 
 // Delete period
-router.delete('/period/:id', (req, res) => {
+router.delete('/period/:id', requireRole(['admin']), (req, res) => {
   try {
     const { id } = req.params;
 

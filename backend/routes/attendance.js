@@ -150,10 +150,32 @@ router.post('/bulk', (req, res) => {
 
     const now = new Date().toISOString();
     const createdRecords = [];
+    const updatedRecords = [];
 
     // Use transaction for bulk insert
     const transaction = db.getDatabase().transaction((records) => {
       for (const record of records) {
+        // B-19 fix: Check for existing record to prevent duplicates
+        const existing = db.getDatabase().prepare(
+          'SELECT id FROM attendance WHERE student_id = ? AND date = ? AND is_deleted = 0'
+        ).get(record.student_id, date);
+
+        if (existing) {
+          // Update existing record instead of creating duplicate
+          const updates = {
+            morning_status: record.morning_status || 'present',
+            afternoon_status: record.afternoon_status || 'present',
+            remarks: record.remarks || '',
+            marked_by: marked_by || 'system',
+            updated_at: now,
+            synced_at: null
+          };
+          db.updateAttendance(existing.id, updates);
+          syncService.addToSyncQueue('attendance', 'UPDATE', existing.id);
+          updatedRecords.push({ id: existing.id, ...updates });
+          continue;
+        }
+
         const id = uuidv4();
         const newRecord = {
           id,
@@ -181,7 +203,18 @@ router.post('/bulk', (req, res) => {
     res.status(201).json({
       success: true,
       data: createdRecords,
+<<<<<<< HEAD
       count: createdRecords.length,
+=======
+      created: createdRecords.length,
+      updated: updatedRecords.length,
+      count: createdRecords.length + updatedRecords.length,
+      schoolHierarchy: {
+        schoolLevel: schoolLevel || null,
+        section: section || null,
+        stream: stream || null
+      },
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
       message: 'Bulk attendance marked successfully'
     });
   } catch (error) {

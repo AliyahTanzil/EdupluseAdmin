@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const { validateTableName, buildSafeUpdate } = require('../config/security');
 
 const dbPath = path.join(__dirname, '../data/eduplus.db');
 
@@ -67,7 +68,8 @@ const initializeLocalDB = () => {
       total_teachers INTEGER DEFAULT 0,
       status TEXT DEFAULT 'active',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      is_deleted INTEGER DEFAULT 0
     )
   `);
 
@@ -283,6 +285,64 @@ const initializeLocalDB = () => {
     )
   `);
 
+  // C-4 fix: Classes table (missing - referenced by class_enrollments & exams)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS classes (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      school_id TEXT,
+      grade_level TEXT,
+      section TEXT,
+      academic_year TEXT,
+      teacher_id TEXT,
+      capacity INTEGER DEFAULT 40,
+      status TEXT DEFAULT 'active',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      is_deleted INTEGER DEFAULT 0,
+      FOREIGN KEY (school_id) REFERENCES schools(id),
+      FOREIGN KEY (teacher_id) REFERENCES teachers(id)
+    )
+  `);
+
+  // ============ SAFE MIGRATIONS FOR EXISTING DATABASES ============
+  // Add is_deleted column to tables that may have been created without it
+  const safeAddColumn = (table, column, type) => {
+    try {
+      const cols = db.pragma(`table_info(${table})`);
+      const exists = cols.some(c => c.name === column);
+      if (!exists) {
+        db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+        console.log(`  ✓ Added missing column ${table}.${column}`);
+      }
+    } catch (e) {
+      // Table may not exist yet - that's fine, CREATE TABLE above handles it
+    }
+  };
+
+  safeAddColumn('schools', 'is_deleted', 'INTEGER DEFAULT 0');
+  safeAddColumn('users', 'is_deleted', 'INTEGER DEFAULT 0');
+
+  // C-2 fix: Add indexes for frequently queried columns
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_students_class ON students(class)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_students_is_deleted ON students(is_deleted)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_attendance_student_id ON attendance(student_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_attendance_is_deleted ON attendance(is_deleted)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_grades_student_id ON grades(student_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_grades_subject_id ON grades(subject_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_grades_is_deleted ON grades(is_deleted)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_teachers_is_deleted ON teachers(is_deleted)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_subjects_is_deleted ON subjects(is_deleted)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_schools_is_deleted ON schools(is_deleted)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_assignments_class_id ON assignments(class_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_assignments_is_deleted ON assignments(is_deleted)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_timetable_class ON timetable(class)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_sync_logs_table ON sync_logs(table_name)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_class_enrollments_student ON class_enrollments(student_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_classes_school_id ON classes(school_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_classes_is_deleted ON classes(is_deleted)`);
+
   console.log('✓ Local database initialized successfully');
 };
 
@@ -317,8 +377,7 @@ const insertStudent = (student) => {
 };
 
 const updateStudent = (id, updates) => {
-  const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-  const values = Object.values(updates);
+  const { fields, values } = buildSafeUpdate('students', id, updates);
   const stmt = db.prepare(`UPDATE students SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
   return stmt.run(...values, id);
 };
@@ -359,8 +418,7 @@ const insertTeacher = (teacher) => {
 };
 
 const updateTeacher = (id, updates) => {
-  const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-  const values = Object.values(updates);
+  const { fields, values } = buildSafeUpdate('teachers', id, updates);
   const stmt = db.prepare(`UPDATE teachers SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
   return stmt.run(...values, id);
 };
@@ -413,8 +471,7 @@ const insertAttendance = (attendance) => {
 };
 
 const updateAttendance = (id, updates) => {
-  const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-  const values = Object.values(updates);
+  const { fields, values } = buildSafeUpdate('attendance', id, updates);
   const stmt = db.prepare(`UPDATE attendance SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
   return stmt.run(...values, id);
 };
@@ -476,8 +533,7 @@ const insertTimetablePeriod = (period) => {
 };
 
 const updateTimetablePeriod = (id, updates) => {
-  const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-  const values = Object.values(updates);
+  const { fields, values } = buildSafeUpdate('timetable', id, updates);
   const stmt = db.prepare(`UPDATE timetable SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
   return stmt.run(...values, id);
 };
@@ -519,8 +575,7 @@ const insertSubject = (subject) => {
 };
 
 const updateSubject = (id, updates) => {
-  const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-  const values = Object.values(updates);
+  const { fields, values } = buildSafeUpdate('subjects', id, updates);
   const stmt = db.prepare(`UPDATE subjects SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
   return stmt.run(...values, id);
 };
@@ -530,6 +585,51 @@ const deleteSubject = (id) => {
   return stmt.run(id);
 };
 
+<<<<<<< HEAD
+=======
+// Courses operations
+const getCourse = (id) => {
+  const stmt = db.prepare('SELECT * FROM courses WHERE id = ? AND is_deleted = 0');
+  return stmt.get(id);
+};
+
+const getAllCourses = (limit = 100, offset = 0) => {
+  const stmt = db.prepare('SELECT * FROM courses WHERE is_deleted = 0 LIMIT ? OFFSET ?');
+  return stmt.all(limit, offset);
+};
+
+const insertCourse = (course) => {
+  const stmt = db.prepare(`
+    INSERT INTO courses (id, name, code, description, credits, teacher_id, semester, created_at, updated_at, synced_at, is_deleted)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  return stmt.run(
+    course.id,
+    course.name,
+    course.code,
+    course.description,
+    course.credits,
+    course.teacher_id,
+    course.semester,
+    course.created_at,
+    course.updated_at,
+    course.synced_at,
+    course.is_deleted
+  );
+};
+
+const updateCourse = (id, updates) => {
+  const { fields, values } = buildSafeUpdate('courses', id, updates);
+  const stmt = db.prepare(`UPDATE courses SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
+  return stmt.run(...values, id);
+};
+
+const deleteCourse = (id) => {
+  const stmt = db.prepare('UPDATE courses SET is_deleted = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+  return stmt.run(id);
+};
+
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
 // Devices operations
 const getDevice = (id) => {
   const stmt = db.prepare('SELECT * FROM devices WHERE id = ? AND is_deleted = 0');
@@ -562,8 +662,7 @@ const insertDevice = (device) => {
 };
 
 const updateDevice = (id, updates) => {
-  const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-  const values = Object.values(updates);
+  const { fields, values } = buildSafeUpdate('devices', id, updates);
   const stmt = db.prepare(`UPDATE devices SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
   return stmt.run(...values, id);
 };
@@ -583,8 +682,9 @@ const getPendingSyncRecords = () => {
   return stmt.all();
 };
 
-// Mark record as synced
+// Mark record as synced (A-7 fix: validate table name)
 const markAsSynced = (id, tableName) => {
+  validateTableName(tableName);
   const stmt = db.prepare(`
     UPDATE ${tableName} 
     SET synced_at = CURRENT_TIMESTAMP 

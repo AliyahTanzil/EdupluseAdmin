@@ -55,8 +55,8 @@ router.get('/', (req, res) => {
   }
 });
 
-// Get single teacher by ID
-router.get('/:id', (req, res) => {
+// Get single teacher by ID (B-22 fix: add permission check)
+router.get('/:id', requirePermission('view_teachers'), (req, res) => {
   try {
     const { id } = req.params;
     const teacher = db.getTeacher(id);

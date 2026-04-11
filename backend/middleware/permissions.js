@@ -19,13 +19,14 @@ const requirePermission = (requiredPermissions, requireAll = false) => {
         });
       }
 
-      // Super users and CEO admins bypass all permission checks
+      // Super users and CEO/Principal admins bypass all permission checks
       if (user.isSuperUser || user.adminType === 'ceo' || user.adminType === 'principal') {
         return next();
       }
 
-      // Admin role users get broad access
-      if (user.role === 'admin') {
+      // Only CEO-level admins get broad access (B-3 fix: not ALL admin types)
+      // Regular admin, secretary, treasurer must go through permission checks
+      if (user.role === 'admin' && (user.adminType === 'ceo' || user.adminType === 'principal' || user.isSuperUser)) {
         return next();
       }
 
@@ -38,9 +39,11 @@ const requirePermission = (requiredPermissions, requireAll = false) => {
       }
 
       if (!userRole) {
-        // If we can't resolve the role, allow access for authenticated users
-        // This prevents blocking users when role resolution fails
-        return next();
+        // If we can't resolve the role, deny access (B-2 fix: fail secure)
+        return res.status(403).json({
+          success: false,
+          message: 'Forbidden: Unable to resolve user role for permission check'
+        });
       }
 
       // Normalize permissions to array

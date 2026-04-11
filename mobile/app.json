@@ -9,36 +9,55 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#3B82F6"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "supportsTabletMode": true,
+      "supportsTablet": true,
       "bundleIdentifier": "com.eduplus.admin",
-      "buildNumber": "1.0.0"
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Use Face ID for quick login",
+        "NSCameraUsageDescription": "Take profile photos for students and staff",
+        "NSPhotoLibraryUsageDescription": "Upload profile photos for students and staff"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#3B82F6"
       },
       "package": "com.eduplus.admin",
-      "versionCode": 1
+      "versionCode": 1,
+      "permissions": [
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "expo-local-authentication",
       [
-        "expo-build-properties",
+        "expo-image-picker",
         {
-          "ios": {
-            "useFrameworks": "static"
-          }
+          "photosPermission": "The app needs access to your photos for profile pictures.",
+          "cameraPermission": "The app needs access to your camera to take profile photos."
         }
-      ]
-    ]
+      ],
+      "expo-font"
+    ],
+    "updates": {
+      "enabled": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "eduplus-admin"
+      }
+    }
   }
 }

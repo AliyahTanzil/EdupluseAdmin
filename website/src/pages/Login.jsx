@@ -3,10 +3,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, Button, ErrorAlert } from '../components/Shared';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { Mail, Lock, Eye, EyeOff, LogIn, Users, ChevronLeft } from 'lucide-react';
 =======
 import { Mail, Lock, Eye, EyeOff, LogIn, Users } from 'lucide-react';
 >>>>>>> 041b17aa (modification)
+=======
+import { Mail, Lock, Eye, EyeOff, LogIn, Users, ChevronLeft } from 'lucide-react';
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
 
 const Login = () => {
   const navigate = useNavigate();
@@ -16,15 +20,23 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState('');  // New: User type selector
 <<<<<<< HEAD
+<<<<<<< HEAD
   const [teacherLevel, setTeacherLevel] = useState(''); // Teacher school-level sub-option
   const [showTeacherOptions, setShowTeacherOptions] = useState(false); // Show teacher sub-options
 =======
 >>>>>>> 041b17aa (modification)
+=======
+  const [teacherLevel, setTeacherLevel] = useState(''); // Teacher school-level sub-option
+  const [showTeacherOptions, setShowTeacherOptions] = useState(false); // Show teacher sub-options
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
   // Teacher school-level options
   const teacherLevelOptions = {
     'nursery': {
@@ -61,8 +73,11 @@ const Login = () => {
     }
   };
 
+<<<<<<< HEAD
 =======
 >>>>>>> 041b17aa (modification)
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
   // Demo users with their credentials
   const demoUsers = {
     'ceo': {
@@ -89,17 +104,23 @@ const Login = () => {
     'teacher': {
       name: 'Teacher',
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
       email: '',
       password: '',
       description: 'Select school level →',
       icon: '👩‍🏫',
       hasSubOptions: true
+<<<<<<< HEAD
 =======
       email: 'teacher@school.com',
       password: 'password',
       description: 'Manage classes and grades',
       icon: '👩‍🏫'
 >>>>>>> 041b17aa (modification)
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
     },
     'student': {
       name: 'Student',
@@ -120,6 +141,9 @@ const Login = () => {
   // Auto-fill email and password when user type is selected
   const handleUserTypeChange = (type) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
     if (type === 'teacher') {
       setUserType(type);
       setShowTeacherOptions(true);
@@ -129,8 +153,11 @@ const Login = () => {
     }
     setShowTeacherOptions(false);
     setTeacherLevel('');
+<<<<<<< HEAD
 =======
 >>>>>>> 041b17aa (modification)
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
     setUserType(type);
     if (demoUsers[type]) {
       setEmail(demoUsers[type].email);
@@ -139,6 +166,9 @@ const Login = () => {
   };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
   // Handle teacher level selection
   const handleTeacherLevelChange = (level) => {
     setTeacherLevel(level);
@@ -148,8 +178,11 @@ const Login = () => {
     }
   };
 
+<<<<<<< HEAD
 =======
 >>>>>>> 041b17aa (modification)
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
   // If already logged in, redirect to school selection
   useEffect(() => {
     if (!isAuthenticated || !user) return;
@@ -224,6 +257,9 @@ const Login = () => {
                   ))}
                 </div>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
 
                 {/* Teacher School Level Sub-Options */}
                 {showTeacherOptions && (
@@ -293,11 +329,14 @@ const Login = () => {
                     {showTeacherOptions && !teacherLevel && (
                       <span className="block mt-1 text-orange-600 font-semibold">⚠️ Please select a school level for Teacher</span>
                     )}
+<<<<<<< HEAD
 =======
                 <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-4">
                   <p className="text-xs text-blue-700">
                     <strong>💡 Tip:</strong> Click a user type above to auto-fill email and password
 >>>>>>> 041b17aa (modification)
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
                   </p>
                 </div>
               </div>
@@ -375,14 +414,20 @@ const Login = () => {
                 <p><strong>👨‍🎓 Principal:</strong> principal@school.com (2 schools)</p>
                 <p><strong>🎯 Regular Admin:</strong> regularadmin@school.com (1 school)</p>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
                 <p className="font-medium text-gray-700">👩‍🏫 Teachers (by school level):</p>
                 <p className="pl-4">🧒 Nursery: teacher-nursery@school.com</p>
                 <p className="pl-4">📚 Class (Primary): teacher@school.com</p>
                 <p className="pl-4">🏫 Junior Secondary: classteacher@school.com</p>
                 <p className="pl-4">🎓 Senior Secondary: teacher-senior@school.com</p>
+<<<<<<< HEAD
 =======
                 <p><strong>👩‍🏫 Teacher:</strong> teacher@school.com / password</p>
 >>>>>>> 041b17aa (modification)
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
                 <p><strong>👨‍🎓 Student:</strong> student-primary@school.com / password</p>
                 <p><strong>👨‍👩‍👧 Parent:</strong> parent@school.com / password</p>
                 <p className="text-blue-600 font-medium mt-2">All passwords: <code className="bg-gray-100 px-1 py-0.5 rounded">password</code></p>

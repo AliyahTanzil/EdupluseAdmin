@@ -6,10 +6,14 @@ const dotenv = require('dotenv');
 <<<<<<< HEAD
 =======
 const path = require('path');
+<<<<<<< HEAD
 >>>>>>> 041b17aa (modification)
+=======
+const rateLimit = require('express-rate-limit');
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 <<<<<<< HEAD
 const app = express();
@@ -95,6 +99,25 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
+// ============ RATE LIMITING (E-5) ============
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // limit each IP to 500 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' }
+});
+app.use('/api/', generalLimiter);
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 login attempts per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many login attempts, please try again later.' }
+});
+app.use('/api/auth/login', authLimiter);
+
 // ============ REQUEST LOGGING ============
 app.use((req, res, next) => {
   const start = Date.now();
@@ -144,7 +167,8 @@ app.use('/api/timetable', authMiddleware, require('./routes/timetable'));
 app.use('/api/courses', authMiddleware, require('./routes/courses'));
 app.use('/api/devices', authMiddleware, require('./routes/devices'));
 app.use('/api/sync', authMiddleware, require('./routes/sync'));
-app.use('/api/school-structure', require('./routes/schoolStructure'));
+app.use('/api/school-structure', authMiddleware, require('./routes/schoolStructure'));
+app.use('/api/analytics', authMiddleware, require('./routes/analytics'));
 
 // ============ 404 HANDLER ============
 app.use((req, res) => {
@@ -155,13 +179,14 @@ app.use((req, res) => {
   });
 });
 
-// ============ ERROR HANDLER ============
+// ============ ERROR HANDLER (A-11 fix: only leak stack in development) ============
 app.use((err, req, res, next) => {
   console.error('Error:', err);
+  const isDev = process.env.NODE_ENV === 'development';
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err : {},
+    ...(isDev && { error: err.stack }),
   });
 });
 
@@ -191,7 +216,11 @@ function findAvailablePort(startPort) {
 (async () => {
   const availablePort = await findAvailablePort(PORT);
   
-  app.listen(availablePort, () => {
+  if (availablePort !== Number(PORT)) {
+    console.warn(`⚠️  Port ${PORT} is busy, using port ${availablePort} instead`);
+  }
+
+  const server = app.listen(availablePort, () => {
     console.log(`
 ╔═══════════════════════════════════════╗
 ║  EduPlus Admin Backend API            ║
@@ -201,6 +230,30 @@ function findAvailablePort(startPort) {
 ╚═══════════════════════════════════════╝
     `);
   });
+
+  // ============ GRACEFUL SHUTDOWN (E-8) ============
+  const gracefulShutdown = (signal) => {
+    console.log(`\n${signal} received. Shutting down gracefully...`);
+    server.close(() => {
+      console.log('HTTP server closed.');
+      try {
+        const { db } = require('./database/local');
+        if (db && typeof db.close === 'function') {
+          db.close();
+          console.log('Database connection closed.');
+        }
+      } catch (e) { /* ignore */ }
+      process.exit(0);
+    });
+    // Force exit after 10 seconds
+    setTimeout(() => {
+      console.error('Could not close connections in time, forcefully shutting down');
+      process.exit(1);
+    }, 10000);
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 })();
 >>>>>>> 041b17aa (modification)
 

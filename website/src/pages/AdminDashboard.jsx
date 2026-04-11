@@ -30,10 +30,14 @@ const AdminDashboard = () => {
       const token = localStorage.getItem('authToken');
       const apiBase = getApiBaseUrlSync();
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
       
       const res = await fetch(`${apiBase}/dashboard/admin`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+<<<<<<< HEAD
 =======
       const [studentsRes, teachersRes, attendanceRes] = await Promise.all([
         fetch(`${apiBase}/students`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -41,6 +45,8 @@ const AdminDashboard = () => {
         fetch(`${apiBase}/attendance?date=${new Date().toISOString().split('T')[0]}`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 >>>>>>> 041b17aa (modification)
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
 
       if (!res.ok) {
         throw new Error(`Dashboard API returned ${res.status}`);

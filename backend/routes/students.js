@@ -17,6 +17,10 @@ router.get('/', (req, res) => {
     const offset = parseInt(req.query.offset) || 0;
 
     const students = getAllStudents(limit, offset);
+    
+    // B-13 fix: Get actual total count from database
+    const { db } = require('../database/local');
+    const totalResult = db.prepare('SELECT COUNT(*) as total FROM students WHERE is_deleted = 0').get();
 
     res.json({
       success: true,
@@ -24,7 +28,7 @@ router.get('/', (req, res) => {
       pagination: {
         limit,
         offset,
-        total: students.length
+        total: totalResult.total
       }
     });
   } catch (error) {
@@ -115,14 +119,15 @@ router.put('/:id', (req, res) => {
       });
     }
 
+    // B-14 fix: Use !== undefined pattern so fields can be cleared to empty
     const updates = {
-      name: req.body.name || student.name,
-      email: req.body.email || student.email,
-      phone: req.body.phone || student.phone,
-      parent_phone: req.body.parent_phone || student.parent_phone,
-      address: req.body.address || student.address,
-      date_of_birth: req.body.date_of_birth || student.date_of_birth,
-      photo_url: req.body.photo_url || student.photo_url
+      name: req.body.name !== undefined ? req.body.name : student.name,
+      email: req.body.email !== undefined ? req.body.email : student.email,
+      phone: req.body.phone !== undefined ? req.body.phone : student.phone,
+      parent_phone: req.body.parent_phone !== undefined ? req.body.parent_phone : student.parent_phone,
+      address: req.body.address !== undefined ? req.body.address : student.address,
+      date_of_birth: req.body.date_of_birth !== undefined ? req.body.date_of_birth : student.date_of_birth,
+      photo_url: req.body.photo_url !== undefined ? req.body.photo_url : student.photo_url
     };
 
     updateStudent(req.params.id, updates);

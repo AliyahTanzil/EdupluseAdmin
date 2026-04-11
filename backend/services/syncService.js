@@ -1,6 +1,7 @@
 const { db, getPendingSyncRecords, markAsSynced } = require('../database/local');
 const { isOnline, pushToFirebase, updateFirebaseRecord } = require('../database/firebase');
 const { v4: uuidv4 } = require('uuid');
+const { validateTableName } = require('../config/security');
 
 class SyncService {
   /**
@@ -66,6 +67,9 @@ class SyncService {
    */
   static async syncRecord(syncLog) {
     const { table_name, action, record_id } = syncLog;
+
+    // Validate table name against whitelist (A-7 fix)
+    validateTableName(table_name);
 
     // Get the record from local database
     const stmt = db.prepare(`SELECT * FROM ${table_name} WHERE id = ?`);

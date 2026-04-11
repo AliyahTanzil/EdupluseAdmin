@@ -6,6 +6,7 @@
  */
 
 export const SCHOOL_LEVELS = {
+  NURSERY: 'nursery',
   PRIMARY: 'primary',
   JUNIOR_SECONDARY: 'junior_secondary',
   SENIOR_SECONDARY: 'senior_secondary'
@@ -35,7 +36,7 @@ export const ADMIN_ACCESS_LEVELS = {
   },
   [ADMIN_TYPES.CEO]: {
     canViewMultiple: true,
-    defaultSchools: [SCHOOL_LEVELS.PRIMARY, SCHOOL_LEVELS.JUNIOR_SECONDARY, SCHOOL_LEVELS.SENIOR_SECONDARY],
+    defaultSchools: [SCHOOL_LEVELS.NURSERY, SCHOOL_LEVELS.PRIMARY, SCHOOL_LEVELS.JUNIOR_SECONDARY, SCHOOL_LEVELS.SENIOR_SECONDARY],
     description: 'Super admin - can manage all schools'
   },
   [ADMIN_TYPES.SECRETARY]: {
@@ -74,6 +75,7 @@ export const canViewMultipleSchools = (adminType) => {
  */
 export const getSchoolOptionsForAdminType = (adminType) => {
   const schoolOptions = [
+    { value: SCHOOL_LEVELS.NURSERY, label: 'Nursery / Day Care' },
     { value: SCHOOL_LEVELS.PRIMARY, label: 'Primary School' },
     { value: SCHOOL_LEVELS.JUNIOR_SECONDARY, label: 'Junior Secondary School' },
     { value: SCHOOL_LEVELS.SENIOR_SECONDARY, label: 'Senior Secondary School' }
@@ -148,7 +150,7 @@ export const getDashboardViewForAdminType = (adminType) => {
       return {
         modules: ['students', 'teachers', 'subjects', 'timetable', 'attendance', 'reports', 'system_admin', 'analytics'],
         dataScope: 'all_schools',
-        schools: [SCHOOL_LEVELS.PRIMARY, SCHOOL_LEVELS.JUNIOR_SECONDARY, SCHOOL_LEVELS.SENIOR_SECONDARY]
+        schools: [SCHOOL_LEVELS.NURSERY, SCHOOL_LEVELS.PRIMARY, SCHOOL_LEVELS.JUNIOR_SECONDARY, SCHOOL_LEVELS.SENIOR_SECONDARY]
       };
     case ADMIN_TYPES.SECRETARY:
       return {
@@ -159,7 +161,7 @@ export const getDashboardViewForAdminType = (adminType) => {
       return {
         modules: ['finance', 'fees', 'payments', 'budgets', 'reports'],
         dataScope: 'all_schools',
-        schools: [SCHOOL_LEVELS.PRIMARY, SCHOOL_LEVELS.JUNIOR_SECONDARY, SCHOOL_LEVELS.SENIOR_SECONDARY],
+        schools: [SCHOOL_LEVELS.NURSERY, SCHOOL_LEVELS.PRIMARY, SCHOOL_LEVELS.JUNIOR_SECONDARY, SCHOOL_LEVELS.SENIOR_SECONDARY],
         viewMode: 'finances_only'
       };
     default:

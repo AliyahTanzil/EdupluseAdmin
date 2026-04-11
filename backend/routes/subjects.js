@@ -3,6 +3,7 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const db = require('../database/local');
 const syncService = require('../services/syncService');
+const { requireRole } = require('../middleware/auth');
 
 // Get all subjects
 router.get('/', (req, res) => {
@@ -64,7 +65,7 @@ router.get('/:id', (req, res) => {
 });
 
 // Create new subject
-router.post('/', (req, res) => {
+router.post('/', requireRole(['admin']), (req, res) => {
   try {
     const { name, code, description, credit_hours, category, class_name, teacher_id, status } = req.body;
 
@@ -112,7 +113,7 @@ router.post('/', (req, res) => {
 });
 
 // Update subject
-router.put('/:id', (req, res) => {
+router.put('/:id', requireRole(['admin']), (req, res) => {
   try {
     const { id } = req.params;
     const { name, code, description, credit_hours, category, class_name, teacher_id, status } = req.body;
@@ -152,7 +153,7 @@ router.put('/:id', (req, res) => {
 });
 
 // Delete subject
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requireRole(['admin']), (req, res) => {
   try {
     const { id } = req.params;
 

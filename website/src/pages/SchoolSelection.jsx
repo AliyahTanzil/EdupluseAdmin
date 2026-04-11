@@ -71,6 +71,7 @@ const SchoolSelection = () => {
       const allowedLevels = getAllowedSchoolLevels(user.adminType);
       // Map school hierarchy levels to school type IDs
       const schoolTypeMap = {
+        [SCHOOL_LEVELS.NURSERY]: 'nursery',
         [SCHOOL_LEVELS.PRIMARY]: 'primary',
         [SCHOOL_LEVELS.JUNIOR_SECONDARY]: 'junior_secondary',
         [SCHOOL_LEVELS.SENIOR_SECONDARY]: 'senior_secondary'
@@ -80,7 +81,9 @@ const SchoolSelection = () => {
     
     // Fall back to old RBAC system
     if (!user.role) return [];
-    const roleForRbac = typeof user.role === 'object' ? user.role : user.role;
+    // user.role is now always a base string ('admin', 'teacher', etc.)
+    // Use roleObj if available for RBAC lookup, otherwise use the base role string
+    const roleForRbac = user.roleObj || user.role;
     return getApplicableSchoolTypes(roleForRbac);
   }, [user]);
 
@@ -109,8 +112,9 @@ const SchoolSelection = () => {
     
     // Fall back to old system
     if (!user.role) return 'User';
-    if (typeof user.role === 'object') return user.role.name || 'User';
-    // role is a string like 'admin', 'teacher' etc
+    // user.role is always a base string now; use roleObj for display name if available
+    if (user.roleObj && user.roleObj.name) return user.roleObj.name;
+    // Capitalize the base role string
     return user.role.charAt(0).toUpperCase() + user.role.slice(1);
   };
 
@@ -125,9 +129,9 @@ const SchoolSelection = () => {
     
     // For old RBAC system
     if (!user.role) return false;
-    // If role is an object, check applicableTo
-    if (typeof user.role === 'object') return !user.role.applicableTo;
-    // If role is string 'admin', consider it unrestricted for admin types
+    // If roleObj has no applicableTo restriction, it's unrestricted
+    if (user.roleObj && !user.roleObj.applicableTo) return true;
+    // If role is string 'admin', consider it unrestricted for super users
     return user.role === 'admin' && user.isSuperUser;
   }, [user]);
 
@@ -157,11 +161,10 @@ const SchoolSelection = () => {
     
     // If user already has a role, go directly to their dashboard
     if (user) {
-      // role may be a string ('admin') or an object with .id
-      const roleId = typeof user.role === 'object' ? user.role?.id : user.role;
-      // Also check adminType for more specific routing
-      const effectiveRoleId = user.adminType || roleId;
-      const dashboardPath = getRoleDashboard(effectiveRoleId);
+      // Use the specific roleId (e.g., 'head_master', 'ceo') or adminType for dashboard routing
+      // user.roleId holds the specific role from login, user.role holds the base role ('admin','teacher')
+      const specificRoleId = user.adminType || user.roleId || user.role;
+      const dashboardPath = getRoleDashboard(specificRoleId);
       navigate(dashboardPath);
     } else {
       // If no role yet (just registered), go to role selection

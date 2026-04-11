@@ -1,14 +1,12 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = 'http://10.0.2.2:5001/api'; // Android emulator -> host machine
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  timeout: 15000,
+  headers: { 'Content-Type': 'application/json' },
 });
 
 // Add token to requests
@@ -24,9 +22,7 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Handle response errors
@@ -34,10 +30,8 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      // Handle token expiration
       await AsyncStorage.removeItem('authToken');
       await AsyncStorage.removeItem('user');
-      // Trigger logout action
     }
     return Promise.reject(error);
   }
@@ -45,13 +39,10 @@ apiClient.interceptors.response.use(
 
 // Authentication APIs
 export const authAPI = {
-  login: (email, password) =>
-    apiClient.post('/auth/login', { email, password }),
+  login: (email, password) => apiClient.post('/auth/login', { email, password }),
   logout: () => apiClient.post('/auth/logout'),
-  forgotPassword: (email) =>
-    apiClient.post('/auth/forgot-password', { email }),
-  resetPassword: (token, password) =>
-    apiClient.post('/auth/reset-password', { token, password }),
+  forgotPassword: (email) => apiClient.post('/auth/forgot-password', { email }),
+  resetPassword: (token, password) => apiClient.post('/auth/reset-password', { token, password }),
   verifyToken: () => apiClient.post('/auth/verify-token'),
 };
 
@@ -59,8 +50,7 @@ export const authAPI = {
 export const userAPI = {
   getProfile: () => apiClient.get('/users/profile'),
   updateProfile: (data) => apiClient.put('/users/profile', data),
-  changePassword: (oldPassword, newPassword) =>
-    apiClient.post('/users/change-password', { oldPassword, newPassword }),
+  changePassword: (oldPassword, newPassword) => apiClient.post('/users/change-password', { oldPassword, newPassword }),
   getUsers: (filters) => apiClient.get('/users', { params: filters }),
   getUserById: (id) => apiClient.get(`/users/${id}`),
   createUser: (data) => apiClient.post('/users', data),
@@ -99,6 +89,16 @@ export const gradeAPI = {
   bulkUploadGrades: (data) => apiClient.post('/grades/bulk', data),
 };
 
+// Grades API (report card)
+export const gradesAPI = {
+  getStudentReportCard: (studentId, params) =>
+    apiClient.get(`/grades/student/${studentId}/report-card`, { params }),
+  getStudentGrades: (studentId, params) =>
+    apiClient.get(`/grades/student/${studentId}`, { params }),
+  getClassGrades: (classId, params) =>
+    apiClient.get(`/grades/class/${classId}`, { params }),
+};
+
 // Attendance APIs
 export const attendanceAPI = {
   getAttendance: (filters) => apiClient.get('/attendance', { params: filters }),
@@ -106,8 +106,8 @@ export const attendanceAPI = {
   createAttendance: (data) => apiClient.post('/attendance', data),
   updateAttendance: (id, data) => apiClient.put(`/attendance/${id}`, data),
   deleteAttendance: (id) => apiClient.delete(`/attendance/${id}`),
-  getStudentAttendanceReport: (studentId) =>
-    apiClient.get(`/attendance/student/${studentId}`),
+  markBulk: (data) => apiClient.post('/attendance/bulk', data),
+  getStudentAttendanceReport: (studentId) => apiClient.get(`/attendance/student/${studentId}`),
 };
 
 // Dashboard APIs
@@ -122,16 +122,8 @@ export const reportAPI = {
   getReports: (filters) => apiClient.get('/reports', { params: filters }),
   getReportById: (id) => apiClient.get(`/reports/${id}`),
   generateReport: (data) => apiClient.post('/reports/generate', data),
+  exportReport: (data) => apiClient.post('/reports/export', data),
   downloadReport: (id) => apiClient.get(`/reports/${id}/download`, { responseType: 'blob' }),
 };
-        await AsyncStorage.removeItem('userToken');
-        await AsyncStorage.removeItem('refreshToken');
-        return Promise.reject(refreshError);
-      }
-    }
 
-    return Promise.reject(error);
-  }
-);
-
-export default api;
+export default apiClient;

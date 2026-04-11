@@ -1,8 +1,12 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 =======
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 >>>>>>> 041b17aa (modification)
+=======
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
 import { getApiBaseUrlSync } from '../config/apiConfig';
 
 const AuthContext = createContext();
@@ -154,15 +158,21 @@ export const AuthProvider = ({ children }) => {
         email: data.user.email,
         name: data.user.name,
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
         // Use userType as the base role for routing (matches ProtectedRoute/Sidebar checks)
         // userType is always 'admin', 'teacher', 'student', or 'parent'
         role: data.user.userType || (typeof data.user.role === 'string' ? data.user.role : (data.user.role?.id || data.user.role)),
         // Store the specific role ID (e.g., 'head_master', 'class_master', 'ceo')
         roleId: typeof data.user.role === 'object' ? data.user.role.id : data.user.role,
+<<<<<<< HEAD
 =======
         // Store the full role object for permissions/SchoolSelection
         role: typeof data.user.role === 'string' ? data.user.role : (data.user.role?.id || data.user.role),
 >>>>>>> 041b17aa (modification)
+=======
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
         roleObj: typeof data.user.role === 'object' ? data.user.role : null,
         // Admin hierarchy fields
         adminType: data.user.adminType || null,

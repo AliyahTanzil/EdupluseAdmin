@@ -352,8 +352,12 @@ router.delete('/:schoolId', (req, res) => {
       });
     }
 
-    const stmt = db.prepare('DELETE FROM schools WHERE id = ?');
-    stmt.run(schoolId);
+    // B-10 fix: Use soft delete instead of hard delete
+    // First check for related records
+    const studentCount = db.prepare('SELECT COUNT(*) as count FROM students WHERE class LIKE ? AND is_deleted = 0').get(`%${schoolId}%`);
+    
+    const stmt = db.prepare("UPDATE schools SET status = 'deleted', updated_at = ? WHERE id = ?");
+    stmt.run(new Date().toISOString(), schoolId);
 
     res.json({
       success: true,

@@ -3,19 +3,54 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const schoolStructure = require('../config/schoolStructure');
+<<<<<<< HEAD
+=======
+const { TEACHER_ROLES, ADMIN_ROLES, USER_TYPES, SCHOOL_TYPES } = require('../config/rbac');
+const { JWT_SECRET } = require('../config/security');
+const { authMiddleware } = require('../middleware/auth');
+
+// ============ TOKEN BLACKLIST (A-9) ============
+const tokenBlacklist = new Set();
+
+// Clean up expired tokens from blacklist periodically (every 1 hour)
+setInterval(() => {
+  const now = Math.floor(Date.now() / 1000);
+  for (const entry of tokenBlacklist) {
+    try {
+      const decoded = jwt.decode(entry);
+      if (decoded && decoded.exp && decoded.exp < now) {
+        tokenBlacklist.delete(entry);
+      }
+    } catch (e) {
+      tokenBlacklist.delete(entry);
+    }
+  }
+}, 60 * 60 * 1000);
+
+/**
+ * Check if a token is blacklisted
+ */
+const isTokenBlacklisted = (token) => tokenBlacklist.has(token);
+
+// Export for use by auth middleware
+router.isTokenBlacklisted = isTokenBlacklisted;
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
 
 // Mock user database (replace with real database)
-// Updated with proper school hierarchy structure
+// Passwords are hashed with bcrypt (A-5 fix)
+// NOTE: All demo passwords are 'password' - hashed at startup
+let usersInitialized = false;
 const users = [
   // ADMIN - CEO (Super Admin with all school access)
   {
     id: '1',
     email: 'admin@school.com',
-    password: 'password', // In real app, this should be hashed
+    password: '$PLACEHOLDER$', // Will be hashed at startup
+    _plainPassword: 'password', // Temporary - removed after hashing
     name: 'Principal Admin',
     role: 'admin',
-    adminType: 'ceo',  // CEO admin type
-    assignedSchools: ['primary', 'junior_secondary', 'senior_secondary'],  // All schools
+    adminType: 'ceo',
+    assignedSchools: ['nursery', 'primary', 'junior_secondary', 'senior_secondary'],
     isSuperUser: true,
     phone: '+1-800-123-4567',
     address: '123 Education Street, School City',
@@ -26,7 +61,8 @@ const users = [
   {
     id: '1a',
     email: 'principal@school.com',
-    password: 'password',
+    password: '$PLACEHOLDER$',
+    _plainPassword: 'password',
     name: 'Dr. Sarah Principal',
     role: 'admin',
     adminType: 'principal',  // Principal admin type
@@ -41,7 +77,8 @@ const users = [
   {
     id: '1b',
     email: 'regularadmin@school.com',
-    password: 'password',
+    password: '$PLACEHOLDER$',
+    _plainPassword: 'password',
     name: 'John Regular Admin',
     role: 'admin',
     adminType: 'admin',  // Regular admin type
@@ -56,7 +93,8 @@ const users = [
   {
     id: '2',
     email: 'teacher@school.com',
-    password: 'password',
+    password: '$PLACEHOLDER$',
+    _plainPassword: 'password',
     name: 'John Teacher',
     role: 'teacher',
     teacherType: 'regular',
@@ -74,11 +112,58 @@ const users = [
     department: 'Primary Section'
   },
 
+  // NURSERY TEACHER (Primary School - Nursery)
+  {
+    id: '2d',
+    email: 'teacher-nursery@school.com',
+    password: '$PLACEHOLDER$',
+    _plainPassword: 'password',
+    name: 'Mary Nursery Teacher',
+    role: 'teacher',
+    teacherType: 'regular',
+    schoolLevel: 'primary',
+    section: 'nursery',
+    assignedClasses: [
+      {
+        classId: 'nursery-ii',
+        className: 'Nursery II',
+        className_full: 'Primary - Nursery II'
+      }
+    ],
+    subjects: ['Literacy', 'Numeracy', 'Creative Arts'],
+    phone: '+1-800-777-8888',
+    department: 'Nursery Section'
+  },
+
+  // SENIOR SECONDARY TEACHER
+  {
+    id: '2e',
+    email: 'teacher-senior@school.com',
+    password: '$PLACEHOLDER$',
+    _plainPassword: 'password',
+    name: 'James Senior Teacher',
+    role: 'teacher',
+    teacherType: 'regular',
+    schoolLevel: 'secondary',
+    section: 'senior_secondary',
+    assignedClasses: [
+      {
+        classId: 'sss-1-sci',
+        className: 'SSS1',
+        className_full: 'Secondary - Senior Secondary - SSS1 (Science)'
+      }
+    ],
+    subjects: ['Chemistry', 'Biology'],
+    phone: '+1-800-888-9999',
+    department: 'Senior Secondary Section'
+  },
+
   // CLASS TEACHER (Junior Secondary - Form 1)
   {
     id: '2a',
     email: 'classteacher@school.com',
-    password: 'password',
+    password: '$PLACEHOLDER$',
+    _plainPassword: 'password',
     name: 'Sarah ClassTeacher',
     role: 'teacher',
     teacherType: 'class_teacher',
@@ -97,7 +182,8 @@ const users = [
   {
     id: '2b',
     email: 'subjecthead@school.com',
-    password: 'password',
+    password: '$PLACEHOLDER$',
+    _plainPassword: 'password',
     name: 'Dr. Michael SubjectHead',
     role: 'teacher',
     teacherType: 'subject_head',
@@ -120,7 +206,8 @@ const users = [
   {
     id: '2c',
     email: 'depthead@school.com',
-    password: 'password',
+    password: '$PLACEHOLDER$',
+    _plainPassword: 'password',
     name: 'Prof. Rachel DeptHead',
     role: 'teacher',
     teacherType: 'departmental_head',
@@ -146,7 +233,8 @@ const users = [
   {
     id: '3',
     email: 'student-primary@school.com',
-    password: 'password',
+    password: '$PLACEHOLDER$',
+    _plainPassword: 'password',
     name: 'Jane Student (Primary)',
     role: 'student',
     schoolLevel: 'primary',
@@ -163,7 +251,8 @@ const users = [
   {
     id: '5',
     email: 'student-jss@school.com',
-    password: 'password',
+    password: '$PLACEHOLDER$',
+    _plainPassword: 'password',
     name: 'Ahmad Student (JSS)',
     role: 'student',
     schoolLevel: 'secondary',
@@ -180,7 +269,8 @@ const users = [
   {
     id: '6',
     email: 'student-sss-science@school.com',
-    password: 'password',
+    password: '$PLACEHOLDER$',
+    _plainPassword: 'password',
     name: 'Chioma Student (Science)',
     role: 'student',
     schoolLevel: 'secondary',
@@ -197,7 +287,8 @@ const users = [
   {
     id: '7',
     email: 'student-sss-commercial@school.com',
-    password: 'password',
+    password: '$PLACEHOLDER$',
+    _plainPassword: 'password',
     name: 'Adebayo Student (Commercial)',
     role: 'student',
     schoolLevel: 'secondary',
@@ -214,14 +305,28 @@ const users = [
   {
     id: '4',
     email: 'parent@school.com',
-    password: 'password',
+    password: '$PLACEHOLDER$',
+    _plainPassword: 'password',
     name: 'John Parent',
     role: 'parent',
     children: ['3', '5'] // IDs of student children (one primary, one JSS)
   }
 ];
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET_UNUSED = null; // Use centralized config/security.js instead
+
+// Hash all demo user passwords at startup (A-5 fix)
+(async () => {
+  if (usersInitialized) return;
+  for (const user of users) {
+    if (user._plainPassword) {
+      user.password = await bcrypt.hash(user._plainPassword, 10);
+      delete user._plainPassword;
+    }
+  }
+  usersInitialized = true;
+  console.log('✓ Demo user passwords hashed with bcrypt');
+})();
 
 /**
  * POST /api/auth/login
@@ -248,10 +353,9 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // In production, use bcrypt to compare hashed passwords
-    // const passwordMatch = await bcrypt.compare(password, user.password);
-    // For demo, do simple comparison
-    if (user.password !== password) {
+    // Use bcrypt to compare hashed passwords (A-5 fix)
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
@@ -417,10 +521,11 @@ router.post('/register', async (req, res) => {
     }
 
     // Create new user based on role
+    const hashedPassword = await bcrypt.hash(password, 10);
     let newUser = {
       id: Date.now().toString(),
       email,
-      password, // In production, hash this with bcrypt
+      password: hashedPassword, // Store hashed password (A-8 fix)
       name,
       role,
       phone: phone || null,
@@ -496,21 +601,11 @@ router.post('/register', async (req, res) => {
 
 /**
  * GET /api/auth/me
- * Get current user (requires token)
+ * Get current user (requires token) - Fixed B-17: applies auth middleware
  */
-router.get('/me', (req, res) => {
+router.get('/me', authMiddleware, (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'No token provided'
-      });
-    }
-
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = users.find(u => u.id === decoded.id);
+    const user = users.find(u => u.id === req.user.id);
 
     if (!user) {
       return res.status(404).json({
@@ -560,10 +655,8 @@ router.post('/logout', (req, res) => {
     }
 
     // Token is successfully verified and logout is complete
-    // In a production app, you would:
-    // 1. Add token to blacklist/revocation list
-    // 2. Clear user session from database
-    // 3. Clear any cached user data
+    // Add token to blacklist so it can't be reused (A-9 fix)
+    tokenBlacklist.add(token);
 
     res.json({
       success: true,

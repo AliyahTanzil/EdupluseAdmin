@@ -55,11 +55,15 @@ export const ProtectedRoute = ({
   // Check if admin-only access required
   if (requireAdmin) {
 <<<<<<< HEAD
+<<<<<<< HEAD
     if (baseRole !== 'admin') {
 =======
     const roleStr = typeof user.role === 'object' ? user.role?.id : user.role;
     if (roleStr !== 'admin') {
 >>>>>>> 041b17aa (modification)
+=======
+    if (baseRole !== 'admin') {
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
       return <Navigate to="/unauthorized" replace />;
     }
   }
@@ -67,11 +71,15 @@ export const ProtectedRoute = ({
   // Check role requirements
   if (requiredRoles.length > 0) {
 <<<<<<< HEAD
+<<<<<<< HEAD
     if (!requiredRoles.includes(baseRole)) {
 =======
     const roleStr = typeof user.role === 'object' ? user.role?.id : user.role;
     if (!requiredRoles.includes(roleStr)) {
 >>>>>>> 041b17aa (modification)
+=======
+    if (!requiredRoles.includes(baseRole)) {
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
       return <Navigate to="/unauthorized" replace />;
     }
   }

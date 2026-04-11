@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const { getDatabase } = require('../database/local');
+const { requireRole } = require('../middleware/auth');
 
 /**
  * GET /api/assignments
@@ -41,7 +42,7 @@ router.get('/', (req, res) => {
  * POST /api/assignments
  * Create a new assignment
  */
-router.post('/', (req, res) => {
+router.post('/', requireRole(['admin', 'teacher']), (req, res) => {
   try {
     const db = getDatabase();
     const { title, description, class_id, subject_id, teacher_id, due_date, max_score } = req.body;
@@ -67,7 +68,7 @@ router.post('/', (req, res) => {
 /**
  * PUT /api/assignments/:id
  */
-router.put('/:id', (req, res) => {
+router.put('/:id', requireRole(['admin', 'teacher']), (req, res) => {
   try {
     const db = getDatabase();
     const { id } = req.params;
@@ -89,7 +90,7 @@ router.put('/:id', (req, res) => {
 /**
  * DELETE /api/assignments/:id
  */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requireRole(['admin', 'teacher']), (req, res) => {
   try {
     const db = getDatabase();
     db.prepare('UPDATE assignments SET is_deleted = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(req.params.id);

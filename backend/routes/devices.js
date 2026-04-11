@@ -3,6 +3,7 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const db = require('../database/local');
 const syncService = require('../services/syncService');
+const { requireRole } = require('../middleware/auth');
 
 // Get all devices
 router.get('/', (req, res) => {
@@ -73,7 +74,7 @@ router.get('/:id', (req, res) => {
 });
 
 // Register new device
-router.post('/register', (req, res) => {
+router.post('/register', requireRole(['admin']), (req, res) => {
   try {
     const { device_id, name, location, device_type } = req.body;
 
@@ -202,7 +203,7 @@ router.put('/:id', (req, res) => {
 });
 
 // Delete device
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requireRole(['admin']), (req, res) => {
   try {
     const { id } = req.params;
 

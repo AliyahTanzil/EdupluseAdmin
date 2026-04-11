@@ -5,6 +5,7 @@
  */
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // D-6 fix: Use canonical config/apiConfig.js instead of duplicate port detection
 import { getApiBaseUrl, getApiBaseUrlSync } from '../config/apiConfig.js';
 
@@ -37,14 +38,22 @@ const detectBackendPort = async () => {
   console.warn('⚠️ Could not detect backend port, using default 5001');
   return 5001;
 };
+=======
+// D-6 fix: Use canonical config/apiConfig.js instead of duplicate port detection
+import { getApiBaseUrl, getApiBaseUrlSync } from '../config/apiConfig.js';
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
 
-let API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+let API_BASE_URL = getApiBaseUrlSync();
 
-// Initialize backend port detection
+// Initialize with async detection  
 (async () => {
+<<<<<<< HEAD
   const port = await detectBackendPort();
   API_BASE_URL = `http://localhost:${port}/api`;
 >>>>>>> 041b17aa (modification)
+=======
+  API_BASE_URL = await getApiBaseUrl();
+>>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
 })();
 
 // Helper function to make API calls

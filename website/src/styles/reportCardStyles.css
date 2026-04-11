@@ -1,0 +1,220 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Report Card Styles
+   Grid-based, print-friendly, clean school result sheet
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Base Table Styles ──────────────────────────────────────────── */
+.rc-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.rc-table th,
+.rc-table td {
+  border: 1px solid #374151; /* gray-700 */
+}
+
+.rc-cell {
+  border: 1px solid #4b5563; /* gray-600 */
+  padding: 4px 6px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.75rem;
+}
+
+.rc-th {
+  border: 1px solid #1f2937; /* gray-800 */
+  padding: 6px 4px;
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}
+
+.rc-th-sub {
+  border: 1px solid #374151;
+  padding: 3px 2px;
+  font-weight: 600;
+  font-size: 0.65rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+
+/* ─── Striped Rows ────────────────────────────────────────────────── */
+.rc-table tbody tr:nth-child(even) {
+  background-color: #f9fafb; /* gray-50 */
+}
+
+/* ─── Responsive: Horizontal Scroll on Mobile ────────────────────── */
+@media (max-width: 768px) {
+  .rc-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -0.5rem;
+    padding: 0 0.5rem;
+  }
+
+  .rc-scroll-wrapper table {
+    min-width: 900px;
+  }
+
+  /* Stack the performance ratings on mobile */
+  .rc-perf-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ─── Collapsible Sections (Mobile) ──────────────────────────────── */
+.rc-collapsible-toggle {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.rc-collapsible-toggle:hover {
+  background: #e5e7eb;
+}
+
+.rc-collapsible-content {
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+}
+
+.rc-collapsible-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.rc-collapsible-content.expanded {
+  max-height: 2000px;
+  opacity: 1;
+}
+
+/* ─── Print Styles ───────────────────────────────────────────────── */
+@media print {
+  /* Hide everything except report card */
+  body * {
+    visibility: hidden;
+  }
+
+  #report-card-full,
+  #report-card-full * {
+    visibility: visible;
+  }
+
+  #report-card-full {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 8px;
+    font-size: 10px;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Ensure clean borders for printing */
+  .rc-table th,
+  .rc-table td,
+  .rc-cell,
+  .rc-th,
+  .rc-th-sub {
+    border-color: #000 !important;
+  }
+
+  /* Remove background colors for clean printing */
+  .rc-table tbody tr:nth-child(even) {
+    background-color: transparent !important;
+  }
+
+  tr.hover\:bg-blue-50\/40:hover,
+  tr.hover\:bg-gray-50:hover {
+    background-color: transparent !important;
+  }
+
+  /* Page break control */
+  .rc-page-break {
+    page-break-before: always;
+  }
+
+  .rc-no-break {
+    page-break-inside: avoid;
+  }
+
+  /* Tighter spacing for print */
+  .rc-cell {
+    padding: 2px 4px;
+    font-size: 0.65rem;
+  }
+
+  .rc-th {
+    padding: 4px 3px;
+    font-size: 0.6rem;
+  }
+
+  .rc-th-sub {
+    padding: 2px 2px;
+    font-size: 0.55rem;
+  }
+}
+
+/* ─── Score Input Fields (Editable Mode) ─────────────────────────── */
+.rc-cell input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.rc-cell input[type="number"]::-webkit-outer-spin-button,
+.rc-cell input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ─── Color Coding Badges ────────────────────────────────────────── */
+.rc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.rc-badge-green {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.rc-badge-yellow {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.rc-badge-red {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* ─── Gradient Header ────────────────────────────────────────────── */
+.rc-header-gradient {
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 50%, #eff6ff 100%);
+}

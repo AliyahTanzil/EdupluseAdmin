@@ -29,8 +29,10 @@ import {
 
 const RoleSelection = () => {
   const navigate = useNavigate();
-  const { schoolType, userType } = useSchool();
-  const { selectRole, logout } = useAuth();
+  const { schoolType } = useSchool();
+  const { user, selectRole, logout } = useAuth();
+  // D-2 fix: derive userType from authenticated user's role instead of SchoolContext
+  const userType = user?.role || localStorage.getItem('userType');
   const [step, setStep] = useState(1); // Step 1: Category, Step 2: Specific Role
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedRole, setSelectedRole] = useState(null);

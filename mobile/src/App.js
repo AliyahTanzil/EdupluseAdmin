@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Provider, useSelector } from 'react-redux';
 import { StyleSheet } from 'react-native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SplashScreen from 'expo-splash-screen';
 import store from './redux/store';
 import { setAuth } from './redux/slices/authSlice';
-import * as SplashScreen from 'expo-splash-screen';
 
 // Auth Screens
 import LoginScreen from './screens/auth/LoginScreen';
@@ -22,6 +22,7 @@ import SchoolsScreen from './screens/schools/SchoolsScreen';
 import { SchoolDetailsScreen } from './screens/schools/SchoolDetailsScreen';
 import StudentsScreen from './screens/students/StudentsScreen';
 import StudentDetailsScreen from './screens/students/StudentDetailsScreen';
+import StudentReportCardScreen from './screens/students/StudentReportCardScreen';
 import GradesScreen from './screens/grades/GradesScreen';
 import AttendanceScreen from './screens/attendance/AttendanceScreen';
 import ReportsScreen from './screens/reports/ReportsScreen';
@@ -38,21 +39,12 @@ const DashboardNavigator = () => {
         headerShown: true,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-
-          if (route.name === 'Dashboard') {
-            iconName = focused ? 'dashboard' : 'dashboard';
-          } else if (route.name === 'Schools') {
-            iconName = focused ? 'school' : 'school';
-          } else if (route.name === 'Students') {
-            iconName = focused ? 'people' : 'people';
-          } else if (route.name === 'Grades') {
-            iconName = focused ? 'grade' : 'grade';
-          } else if (route.name === 'Reports') {
-            iconName = focused ? 'assessment' : 'assessment';
-          } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person';
-          }
-
+          if (route.name === 'Dashboard') iconName = 'dashboard';
+          else if (route.name === 'Schools') iconName = 'school';
+          else if (route.name === 'Students') iconName = 'people';
+          else if (route.name === 'Grades') iconName = 'grade';
+          else if (route.name === 'Reports') iconName = 'assessment';
+          else if (route.name === 'Profile') iconName = 'person';
           return <MaterialIcons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#3B82F6',
@@ -62,41 +54,16 @@ const DashboardNavigator = () => {
         headerStyle: styles.headerStyle,
       })}
     >
-      <Tab.Screen
-        name="Dashboard"
-        component={DashboardScreen}
-        options={{ title: 'Dashboard' }}
-      />
-      <Tab.Screen
-        name="Schools"
-        component={SchoolsScreen}
-        options={{ title: 'Schools' }}
-      />
-      <Tab.Screen
-        name="Students"
-        component={StudentsScreen}
-        options={{ title: 'Students' }}
-      />
-      <Tab.Screen
-        name="Grades"
-        component={GradesScreen}
-        options={{ title: 'Grades' }}
-      />
-      <Tab.Screen
-        name="Reports"
-        component={ReportsScreen}
-        options={{ title: 'Reports' }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{ title: 'Profile' }}
-      />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Dashboard' }} />
+      <Tab.Screen name="Schools" component={SchoolsScreen} options={{ title: 'Schools' }} />
+      <Tab.Screen name="Students" component={StudentsScreen} options={{ title: 'Students' }} />
+      <Tab.Screen name="Grades" component={GradesScreen} options={{ title: 'Grades' }} />
+      <Tab.Screen name="Reports" component={ReportsScreen} options={{ title: 'Reports' }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
     </Tab.Navigator>
   );
 };
 
-// Main App Component with Redux store
 function RootNavigator() {
   const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
   const [isReady, setIsReady] = React.useState(false);
@@ -106,7 +73,6 @@ function RootNavigator() {
       try {
         const token = await AsyncStorage.getItem('authToken');
         const user = await AsyncStorage.getItem('user');
-        
         if (token && user) {
           store.dispatch(setAuth({
             user: JSON.parse(user),
@@ -121,67 +87,28 @@ function RootNavigator() {
         await SplashScreen.hideAsync();
       }
     }
-
     bootstrapAsync();
   }, []);
 
-  if (!isReady) {
-    return null;
-  }
+  if (!isReady) return null;
 
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          animationEnabled: true,
-          headerShown: false,
-        }}
-      >
+      <Stack.Navigator screenOptions={{ animationEnabled: true, headerShown: false }}>
         {isAuthenticated ? (
           <>
-            <Stack.Screen
-              name="DashboardStack"
-              component={DashboardNavigator}
-              options={{ animationEnabled: false }}
-            />
-            <Stack.Screen
-              name="SchoolDetails"
-              component={SchoolDetailsScreen}
-              options={{ title: 'School Details' }}
-            />
-            <Stack.Screen
-              name="StudentDetails"
-              component={StudentDetailsScreen}
-              options={{ title: 'Student Details' }}
-            />
-            <Stack.Screen
-              name="Attendance"
-              component={AttendanceScreen}
-              options={{ title: 'Attendance' }}
-            />
-            <Stack.Screen
-              name="Settings"
-              component={SettingsScreen}
-              options={{ title: 'Settings' }}
-            />
+            <Stack.Screen name="DashboardStack" component={DashboardNavigator} options={{ animationEnabled: false }} />
+            <Stack.Screen name="SchoolDetails" component={SchoolDetailsScreen} options={{ title: 'School Details', headerShown: true }} />
+            <Stack.Screen name="StudentDetails" component={StudentDetailsScreen} options={{ title: 'Student Details', headerShown: true }} />
+            <Stack.Screen name="StudentReportCard" component={StudentReportCardScreen} options={{ title: 'Report Card', headerShown: true }} />
+            <Stack.Screen name="Attendance" component={AttendanceScreen} options={{ title: 'Attendance', headerShown: true }} />
+            <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings', headerShown: true }} />
           </>
         ) : (
           <>
-            <Stack.Screen
-              name="Login"
-              component={LoginScreen}
-              options={{ animationEnabled: false }}
-            />
-            <Stack.Screen
-              name="ForgotPassword"
-              component={ForgotPasswordScreen}
-              options={{ title: 'Forgot Password' }}
-            />
-            <Stack.Screen
-              name="ResetPassword"
-              component={ResetPasswordScreen}
-              options={{ title: 'Reset Password' }}
-            />
+            <Stack.Screen name="Login" component={LoginScreen} options={{ animationEnabled: false }} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: 'Forgot Password', headerShown: true }} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ title: 'Reset Password', headerShown: true }} />
           </>
         )}
       </Stack.Navigator>
