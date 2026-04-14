@@ -110,6 +110,16 @@ export const attendanceAPI = {
   getStudentAttendanceReport: (studentId) => apiClient.get(`/attendance/student/${studentId}`),
 };
 
+// Class APIs
+export const classAPI = {
+  getClasses: (filters) => apiClient.get('/classes', { params: filters }),
+  getClassById: (id) => apiClient.get(`/classes/${id}`),
+  createClass: (data) => apiClient.post('/classes', data),
+  updateClass: (id, data) => apiClient.put(`/classes/${id}`, data),
+  deleteClass: (id) => apiClient.delete(`/classes/${id}`),
+  getClassStudents: (id) => apiClient.get(`/classes/${id}/students`),
+};
+
 // Dashboard APIs
 export const dashboardAPI = {
   getSummary: () => apiClient.get('/dashboard/summary'),

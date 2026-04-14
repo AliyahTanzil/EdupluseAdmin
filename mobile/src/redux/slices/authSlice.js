@@ -40,4 +40,8 @@ export const authSlice = createSlice({
 });
 
 export const { setUser, setLoading, setError, logout, clearError } = authSlice.actions;
+
+// Alias so both setUser and setAuth work
+export const setAuth = setUser;
+
 export default authSlice.reducer;

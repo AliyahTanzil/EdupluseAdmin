@@ -1,11 +1,45 @@
+# ===========================================================================
+#  EduPlus Mobile – .gitignore
+# ===========================================================================
+
+# Dependencies
 node_modules/
+
+# Expo
 .expo/
 dist/
-npm-debug.*
+web-build/
+ios/
+android/
+
+# Environment / Secrets
+.env
+.env.*
+!.env.example
+
+# Firebase credentials
+*-firebase-adminsdk-*.json
+serviceAccountKey.json
+google-services.json
+GoogleService-Info.plist
+
+# Private keys & signing
 *.jks
 *.p8
 *.p12
 *.key
+*.pem
+*.keystore
 *.mobileprovision
+*.cert
+
+# Logs
+npm-debug.*
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor merge artifacts
 *.orig.*
-web-build/

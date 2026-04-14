@@ -28,6 +28,11 @@ import AttendanceScreen from './screens/attendance/AttendanceScreen';
 import ReportsScreen from './screens/reports/ReportsScreen';
 import SettingsScreen from './screens/settings/SettingsScreen';
 
+// Section screens
+import SchoolSectionScreen from './screens/sections/SchoolSectionScreen';
+import SectionDashboardScreen from './screens/sections/SectionDashboardScreen';
+import CreateClassScreen from './screens/sections/CreateClassScreen';
+
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -97,6 +102,9 @@ function RootNavigator() {
       <Stack.Navigator screenOptions={{ animationEnabled: true, headerShown: false }}>
         {isAuthenticated ? (
           <>
+            <Stack.Screen name="SchoolSections" component={SchoolSectionScreen} options={{ animationEnabled: false }} />
+            <Stack.Screen name="SectionDashboard" component={SectionDashboardScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="CreateClass" component={CreateClassScreen} options={{ title: 'Create Class', headerShown: true, headerTintColor: '#3B82F6' }} />
             <Stack.Screen name="DashboardStack" component={DashboardNavigator} options={{ animationEnabled: false }} />
             <Stack.Screen name="SchoolDetails" component={SchoolDetailsScreen} options={{ title: 'School Details', headerShown: true }} />
             <Stack.Screen name="StudentDetails" component={StudentDetailsScreen} options={{ title: 'Student Details', headerShown: true }} />

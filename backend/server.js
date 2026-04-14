@@ -88,8 +88,24 @@ app.use(helmet());
 app.use(compression());
 
 // ============ CORS CONFIGURATION ============
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+  .split(',')
+  .map(u => u.trim());
+// Also allow common Vite fallback ports (5174, 5175)
+['http://localhost:5174', 'http://localhost:5175'].forEach(u => {
+  if (!allowedOrigins.includes(u)) allowedOrigins.push(u);
+});
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
