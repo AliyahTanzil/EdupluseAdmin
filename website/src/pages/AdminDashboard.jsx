@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, Button } from '../components/Shared';
-import { Users, BookOpen, BarChart3, Settings, LogOut, User, Clock, Zap, FileText, Wifi, ChevronDown, TrendingUp, AlertCircle } from 'lucide-react';
+import { getApiBaseUrlSync } from '../config/apiConfig';
+import { Users, BookOpen, BarChart3, Settings, LogOut, User, Clock, Zap, FileText, Wifi, ChevronDown, TrendingUp, AlertCircle, Lock } from 'lucide-react';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -27,28 +28,64 @@ const AdminDashboard = () => {
   const fetchDashboardStats = async () => {
     try {
       const token = localStorage.getItem('authToken');
-      const [studentsRes, teachersRes, attendanceRes] = await Promise.all([
-        fetch('http://localhost:5001/api/students', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('http://localhost:5001/api/teachers', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`http://localhost:5001/api/attendance?date=${new Date().toISOString().split('T')[0]}`, { headers: { 'Authorization': `Bearer ${token}` } })
-      ]);
+      const apiBase = getApiBaseUrlSync();
+      
+      const res = await fetch(`${apiBase}/dashboard/admin`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
 
-      const studentsData = await studentsRes.json();
-      const teachersData = await teachersRes.json();
-      const attendanceData = await attendanceRes.json();
+      if (!res.ok) {
+        throw new Error(`Dashboard API returned ${res.status}`);
+      }
+
+      const result = await res.json();
+      const dashStats = result.dashboard?.stats || {};
 
       setStats({
-        totalStudents: studentsData.data?.length || 0,
-        totalTeachers: teachersData.data?.length || 0,
-        totalClasses: Math.ceil((studentsData.data?.length || 0) / 30),
-        totalAttendanceToday: attendanceData.data?.length || 0,
-        presentStudents: attendanceData.data?.filter(a => a.status === 'present').length || 0,
-        absentStudents: attendanceData.data?.filter(a => a.status === 'absent').length || 0,
-        pendingTasks: 3,
+        totalStudents: dashStats.totalStudents || 0,
+        totalTeachers: dashStats.totalTeachers || 0,
+        totalClasses: dashStats.totalSubjects || 0,
+        totalAttendanceToday: dashStats.totalAttendanceToday || 0,
+        presentStudents: dashStats.presentToday || 0,
+        absentStudents: dashStats.absentToday || 0,
+        pendingTasks: dashStats.totalCourses || 0,
         systemHealth: 'Good'
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
+      // Fallback: try individual endpoints if dashboard endpoint fails
+      try {
+        const token = localStorage.getItem('authToken');
+        const apiBase = getApiBaseUrlSync();
+        const safeFetch = async (url) => {
+          try {
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!res.ok) return { data: [] };
+            return await res.json();
+          } catch {
+            return { data: [] };
+          }
+        };
+
+        const [studentsData, teachersData, attendanceData] = await Promise.all([
+          safeFetch(`${apiBase}/students`),
+          safeFetch(`${apiBase}/teachers`),
+          safeFetch(`${apiBase}/attendance?date=${new Date().toISOString().split('T')[0]}`)
+        ]);
+
+        setStats({
+          totalStudents: studentsData.data?.length || studentsData.pagination?.total || 0,
+          totalTeachers: teachersData.data?.length || teachersData.total || 0,
+          totalClasses: Math.ceil((studentsData.pagination?.total || studentsData.data?.length || 0) / 30),
+          totalAttendanceToday: attendanceData.data?.length || 0,
+          presentStudents: attendanceData.data?.filter(a => a.morning_status === 'present').length || 0,
+          absentStudents: attendanceData.data?.filter(a => a.morning_status === 'absent').length || 0,
+          pendingTasks: 0,
+          systemHealth: 'Good'
+        });
+      } catch (fallbackError) {
+        console.error('Fallback fetch also failed:', fallbackError);
+      }
     } finally {
       setLoading(false);
     }
@@ -84,7 +121,7 @@ const AdminDashboard = () => {
       value: stats.totalClasses,
       icon: BookOpen,
       color: 'purple',
-      trend: 'System generated'
+      trend: 'Total subjects in system'
     },
     {
       title: 'Attendance Today',
@@ -94,11 +131,11 @@ const AdminDashboard = () => {
       trend: `${stats.absentStudents} absent`
     },
     {
-      title: 'Pending Tasks',
+      title: 'Total Courses',
       value: stats.pendingTasks,
       icon: AlertCircle,
       color: 'red',
-      trend: 'Requires attention'
+      trend: 'Registered courses'
     },
     {
       title: 'System Health',
@@ -115,70 +152,80 @@ const AdminDashboard = () => {
       description: 'Manage all students - add, edit, delete',
       icon: Users,
       onClick: () => navigate('/students'),
-      color: 'from-blue-500 to-blue-600'
+      color: 'from-blue-500 to-blue-600',
+      requiredPermissions: ['view_students', 'manage_students']
     },
     {
       title: 'Teachers',
       description: 'Manage all teachers and staff',
       icon: User,
       onClick: () => navigate('/teachers'),
-      color: 'from-green-500 to-green-600'
+      color: 'from-green-500 to-green-600',
+      requiredPermissions: ['view_teachers', 'manage_teachers']
     },
     {
       title: 'Subjects',
       description: 'Manage subjects and curriculum',
       icon: BookOpen,
       onClick: () => navigate('/subjects'),
-      color: 'from-purple-500 to-purple-600'
+      color: 'from-purple-500 to-purple-600',
+      requiredPermissions: ['manage_classes']
     },
     {
       title: 'Timetable',
       description: 'Create and manage class schedules',
       icon: Clock,
       onClick: () => navigate('/timetable'),
-      color: 'from-orange-500 to-orange-600'
+      color: 'from-orange-500 to-orange-600',
+      requiredPermissions: ['manage_classes']
     },
     {
       title: 'Attendance',
       description: 'View and manage attendance records',
       icon: BarChart3,
       onClick: () => navigate('/attendance'),
-      color: 'from-red-500 to-red-600'
+      color: 'from-red-500 to-red-600',
+      requiredPermissions: ['view_attendance']
     },
     {
       title: 'Mark Attendance',
       description: 'Mark daily student attendance',
       icon: Zap,
       onClick: () => navigate('/mark-attendance'),
-      color: 'from-yellow-500 to-yellow-600'
+      color: 'from-yellow-500 to-yellow-600',
+      requiredPermissions: ['manage_attendance']
     },
     {
       title: 'Courses',
       description: 'Manage courses and programs',
       icon: BookOpen,
       onClick: () => navigate('/courses'),
-      color: 'from-indigo-500 to-indigo-600'
+      color: 'from-indigo-500 to-indigo-600',
+      requiredPermissions: ['manage_classes']
     },
     {
       title: 'Reports',
       description: 'Generate and export reports',
       icon: FileText,
       onClick: () => navigate('/export-reports'),
-      color: 'from-cyan-500 to-cyan-600'
+      color: 'from-cyan-500 to-cyan-600',
+      requiredPermissions: ['view_all_reports', 'create_reports']
     },
     {
       title: 'Devices',
       description: 'Manage biometric devices',
       icon: Wifi,
       onClick: () => navigate('/manage-devices'),
-      color: 'from-pink-500 to-pink-600'
+      color: 'from-pink-500 to-pink-600',
+      requiredPermissions: ['manage_devices']
     },
     {
       title: 'Settings',
       description: 'System configuration and preferences',
       icon: Settings,
       onClick: () => navigate('/settings'),
-      color: 'from-gray-500 to-gray-600'
+      color: 'from-gray-500 to-gray-600',
+      requiredPermissions: ['super_admin_only']
     }
   ];
 
@@ -291,6 +338,33 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {menuItems.map((item, index) => {
             const Icon = item.icon;
+            
+            // Check if super admin is required
+            if (item.requiredPermissions?.includes('super_admin_only')) {
+              if (!user?.role?.isSuperAdmin) {
+                return null;
+              }
+            } else {
+              // Check if user has at least one required permission
+              const hasAccess = item.requiredPermissions?.some(perm => hasPermission(perm));
+              if (!hasAccess) {
+                return (
+                  <Card key={index} className="opacity-50 cursor-not-allowed">
+                    <div className="p-6 relative">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Lock className="text-gray-400" size={32} />
+                      </div>
+                      <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${item.color} mb-4 opacity-50`}>
+                        <Icon className="text-white" size={24} />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-600 mb-1 line-through">{item.title}</h3>
+                      <p className="text-gray-500 text-sm">Insufficient permissions</p>
+                    </div>
+                  </Card>
+                );
+              }
+            }
+
             return (
               <Card key={index} className="cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200">
                 <div 

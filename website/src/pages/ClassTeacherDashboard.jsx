@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { getApiBaseUrlSync } from '../config/apiConfig';
 
 /**
  * Class Teacher Dashboard
@@ -25,9 +26,10 @@ const ClassTeacherDashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken');
+      const apiBase = getApiBaseUrlSync();
       
       // Fetch class data
-      const classRes = await fetch(`http://localhost:5001/api/classes/${user.class}`, {
+      const classRes = await fetch(`${apiBase}/classes/${user.class}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (classRes.ok) {
@@ -36,7 +38,7 @@ const ClassTeacherDashboard = () => {
       }
 
       // Fetch class students
-      const studentsRes = await fetch(`http://localhost:5001/api/students?class=${user.class}`, {
+      const studentsRes = await fetch(`${apiBase}/students?class=${user.class}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (studentsRes.ok) {
@@ -49,7 +51,7 @@ const ClassTeacherDashboard = () => {
       }
 
       // Fetch attendance stats
-      const attendanceRes = await fetch(`http://localhost:5001/api/attendance/today?class=${user.class}`, {
+      const attendanceRes = await fetch(`${apiBase}/attendance/today?class=${user.class}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (attendanceRes.ok) {

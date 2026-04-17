@@ -5,30 +5,67 @@ import { ArrowLeft, Loader } from 'lucide-react';
 import { studentsAPI } from '../services/api';
 import ErrorAlert from '../components/Shared/ErrorAlert';
 import SuccessAlert from '../components/Shared/SuccessAlert';
+import { SchoolHierarchySelector } from '../utils/schoolStructure.jsx';
 
 const AddNewStudent = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
-    roll: '',
-    class: '',
     email: '',
     phone: '',
     parent_phone: '',
     address: '',
-    date_of_birth: ''
+    date_of_birth: '',
+    // New school hierarchy fields
+    schoolLevel: '',
+    section: '',
+    classSelected: '',
+    stream: '',
+    rollNumber: ''
   });
-
-  const classes = ['9-A', '9-B', '10-A', '10-B', '11-A', '11-B', '12-A', '12-B'];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleSchoolLevelChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      schoolLevel: value,
+      section: '',
+      classSelected: '',
+      stream: ''
+    }));
+  };
+
+  const handleSectionChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      section: value,
+      classSelected: '',
+      stream: ''
+    }));
+  };
+
+  const handleClassChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      classSelected: value
+    }));
+  };
+
+  const handleStreamChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      stream: value
     }));
   };
 
@@ -40,25 +77,42 @@ const AddNewStudent = () => {
       setError(null);
 
       // Validate required fields
-      if (!formData.name || !formData.roll || !formData.class || !formData.email || !formData.phone) {
-        setError('Please fill all required fields (Name, Roll, Class, Email, Phone)');
+      if (!formData.name || !formData.email || !formData.phone || !formData.schoolLevel || !formData.section || !formData.classSelected) {
+        setError('Please fill all required fields including school hierarchy');
         setLoading(false);
         return;
       }
 
-      const response = await studentsAPI.create(formData);
+      // Prepare student data - MUST match backend field names!
+      const studentData = {
+        name: formData.name,
+        roll: formData.rollNumber,           // Backend expects "roll"
+        class: formData.classSelected,       // Backend expects "class"
+        email: formData.email,
+        phone: formData.phone,
+        parent_phone: formData.parent_phone,
+        address: formData.address,
+        date_of_birth: formData.date_of_birth
+        // Note: schoolLevel, section, stream are NOT used by backend student route
+        // They are for frontend UI hierarchy only
+      };
+
+      const response = await studentsAPI.create(studentData);
       
       if (response.success) {
         setSuccess(true);
         setFormData({
           name: '',
-          roll: '',
-          class: '',
           email: '',
           phone: '',
           parent_phone: '',
           address: '',
-          date_of_birth: ''
+          date_of_birth: '',
+          schoolLevel: '',
+          section: '',
+          classSelected: '',
+          stream: '',
+          rollNumber: ''
         });
         
         setTimeout(() => {
@@ -92,116 +146,128 @@ const AddNewStudent = () => {
 
       <div className="max-w-2xl">
         <h1 className="text-4xl font-bold text-gray-800 mb-2">Add New Student</h1>
-        <p className="text-gray-600 mb-8">Fill in the student information below to create a new student record</p>
+        <p className="text-gray-600 mb-8">Fill in the student information and school hierarchy below to create a new student record</p>
 
         {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
         {success && <SuccessAlert message="Student created successfully! Redirecting..." onClose={() => {}} />}
 
         <Card>
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Row 1: Name and Roll */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Student Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="e.g., John Doe"
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Roll Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="roll"
-                  value={formData.roll}
-                  onChange={handleChange}
-                  placeholder="e.g., 001"
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+            {/* SECTION: SCHOOL HIERARCHY */}
+            <div className="border-b border-gray-200 pb-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">School Assignment</h2>
+              <SchoolHierarchySelector
+                schoolLevel={formData.schoolLevel}
+                section={formData.section}
+                classSelected={formData.classSelected}
+                stream={formData.stream}
+                onSchoolLevelChange={handleSchoolLevelChange}
+                onSectionChange={handleSectionChange}
+                onClassChange={handleClassChange}
+                onStreamChange={handleStreamChange}
+              />
             </div>
 
-            {/* Row 2: Class and Email */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Class <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="class"
-                  value={formData.class}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select Class</option>
-                  {classes.map(cls => (
-                    <option key={cls} value={cls}>{cls}</option>
-                  ))}
-                </select>
+            {/* SECTION: PERSONAL INFORMATION */}
+            <div className="border-b border-gray-200 pb-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Personal Information</h2>
+              
+              {/* Row 1: Name and Roll Number */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Student Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="e.g., John Doe"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Roll Number
+                  </label>
+                  <input
+                    type="text"
+                    name="rollNumber"
+                    value={formData.rollNumber}
+                    onChange={handleChange}
+                    placeholder="e.g., 001"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="e.g., john@school.com"
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
+              {/* Row 2: Email and Phone */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="e.g., john@school.com"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
 
-            {/* Row 3: Phone and Parent Phone */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="e.g., 9876543210"
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="e.g., 9876543210"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Parent Phone Number
-                </label>
-                <input
-                  type="tel"
-                  name="parent_phone"
-                  value={formData.parent_phone}
-                  onChange={handleChange}
-                  placeholder="e.g., 9876543210"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
+              {/* Row 3: Parent Phone and Date of Birth */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Parent Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="parent_phone"
+                    value={formData.parent_phone}
+                    onChange={handleChange}
+                    placeholder="e.g., 9876543210"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
 
-            {/* Row 4: Address and Date of Birth */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    name="date_of_birth"
+                    value={formData.date_of_birth}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Row 4: Address */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Address
@@ -212,19 +278,6 @@ const AddNewStudent = () => {
                   value={formData.address}
                   onChange={handleChange}
                   placeholder="e.g., 123 Main Street"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date of Birth
-                </label>
-                <input
-                  type="date"
-                  name="date_of_birth"
-                  value={formData.date_of_birth}
-                  onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>

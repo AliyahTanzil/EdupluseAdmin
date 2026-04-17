@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getApiBaseUrlSync } from '../config/apiConfig';
 import { Card, Button } from '../components/Shared';
 import { Users, BarChart3, Bell, LogOut, GraduationCap, ClipboardList, User, ChevronDown, TrendingUp, AlertCircle, Mail, Heart } from 'lucide-react';
 
 const ParentDashboard = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [stats, setStats] = useState({
     totalChildren: 0,
@@ -28,8 +29,9 @@ const ParentDashboard = () => {
     try {
       const token = localStorage.getItem('authToken');
       // Fetch children data and their statistics
+      const apiBase = getApiBaseUrlSync();
       const [studentsRes] = await Promise.all([
-        fetch('http://localhost:5001/api/students', { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch(`${apiBase}/students`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
       const studentsData = await studentsRes.json();

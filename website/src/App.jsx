@@ -1,13 +1,17 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { SchoolProvider } from './contexts/SchoolContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './layouts/Layout';
 import SessionWarning from './components/SessionWarning';
 import OfflineNotification from './components/OfflineNotification';
 
 // Auth Pages
 import Landing from './pages/Landing';
+import SchoolSelection from './pages/SchoolSelection';
+import RoleSelection from './pages/RoleSelection';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Unauthorized from './pages/Unauthorized';
@@ -48,6 +52,10 @@ import GenerateReport from './pages/GenerateReport';
 import Settings from './pages/Settings';
 import ProfileSettings from './pages/ProfileSettings';
 import Logout from './pages/Logout';
+import Grades from './pages/Grades';
+import StudentResults from './pages/StudentResults';
+import ReportCardPage from './pages/ReportCard';
+import FinanceDashboard from './pages/FinanceDashboard';
 import './App.css'
 
 function AppContent() {
@@ -56,9 +64,11 @@ function AppContent() {
       <SessionWarning />
       <OfflineNotification />
       <Routes>
-          {/* Public Routes */}
+          {/* Public Routes - Flow: Landing → Login → School → Role → Dashboard */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/school-selection" element={<SchoolSelection />} />
+          <Route path="/role-selection" element={<RoleSelection />} />
           <Route path="/register" element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
           <Route path="/logout" element={<Logout />} />
@@ -76,7 +86,7 @@ function AppContent() {
           <Route
             path="/profile-settings"
             element={
-              <ProtectedRoute requiredRoles={['admin']}>
+              <ProtectedRoute requiredRoles={['admin', 'teacher', 'student', 'parent']}>
                 <ProfileSettings />
               </ProtectedRoute>
             }
@@ -166,7 +176,24 @@ function AppContent() {
             <Route path="/manage-devices" element={<ManageDevices />} />
             <Route path="/generate-report" element={<GenerateReport />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/grades" element={<Grades />} />
+            <Route path="/student-results/:id" element={<StudentResults />} />
+            <Route path="/report-card" element={<ReportCardPage />} />
+            <Route path="/report-card/:id" element={<ReportCardPage />} />
+            <Route path="/class-attendance" element={<ClassAttendance />} />
+            <Route path="/class-subjects" element={<ClassSubjects />} />
+            <Route path="/class-timetable" element={<ClassTimetable />} />
           </Route>
+
+          {/* Finance Dashboard */}
+          <Route
+            path="/finance-dashboard"
+            element={
+              <ProtectedRoute requiredRoles={['admin']}>
+                <FinanceDashboard />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Protected Teacher Routes */}
           <Route
@@ -176,9 +203,13 @@ function AppContent() {
               </ProtectedRoute>
             }
           >
-            <Route path="/subjects" element={<Subjects />} />
-            <Route path="/attendance" element={<Attendance />} />
-            <Route path="/mark-attendance" element={<MarkAttendance />} />
+            {/* D-5 fix: teacher-specific routes use /teacher- prefix to avoid duplicate /subjects, /attendance */}
+            <Route path="/teacher-subjects" element={<Subjects />} />
+            <Route path="/teacher-attendance" element={<Attendance />} />
+            <Route path="/teacher-mark-attendance" element={<MarkAttendance />} />
+            <Route path="/teacher-grades" element={<Grades />} />
+            <Route path="/teacher-report-card" element={<ReportCardPage />} />
+            <Route path="/teacher-report-card/:id" element={<ReportCardPage />} />
           </Route>
 
           {/* Catch-all redirect */}
@@ -191,9 +222,13 @@ function AppContent() {
 function App() {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <SchoolProvider>
+            <AppContent />
+          </SchoolProvider>
+        </AuthProvider>
+      </ErrorBoundary>
     </Router>
   )
 }

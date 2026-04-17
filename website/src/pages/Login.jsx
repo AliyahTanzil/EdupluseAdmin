@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, Button, ErrorAlert } from '../components/Shared';
-import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, Users, ChevronLeft } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -10,30 +10,128 @@ const Login = () => {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [userType, setUserType] = useState('');  // New: User type selector
+  const [teacherLevel, setTeacherLevel] = useState(''); // Teacher school-level sub-option
+  const [showTeacherOptions, setShowTeacherOptions] = useState(false); // Show teacher sub-options
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // If already logged in, redirect to role dashboard
+  // Teacher school-level options
+  const teacherLevelOptions = {
+    'nursery': {
+      name: 'Nursery',
+      email: 'teacher-nursery@school.com',
+      password: 'password',
+      description: 'Nursery / Day Care section',
+      icon: '🧒',
+      category: 'Primary'
+    },
+    'class': {
+      name: 'Class (Primary)',
+      email: 'teacher@school.com',
+      password: 'password',
+      description: 'Primary Classes 1-6',
+      icon: '📚',
+      category: 'Primary'
+    },
+    'junior': {
+      name: 'Junior Secondary',
+      email: 'classteacher@school.com',
+      password: 'password',
+      description: 'JSS 1-3 (Form 1-3)',
+      icon: '🏫',
+      category: 'Secondary'
+    },
+    'senior': {
+      name: 'Senior Secondary',
+      email: 'teacher-senior@school.com',
+      password: 'password',
+      description: 'SSS 1-3',
+      icon: '🎓',
+      category: 'Secondary'
+    }
+  };
+
+  // Demo users with their credentials
+  const demoUsers = {
+    'ceo': {
+      name: 'CEO Admin',
+      email: 'admin@school.com',
+      password: 'password',
+      description: 'All 3 schools (Primary, Junior, Senior)',
+      icon: '👑'
+    },
+    'principal': {
+      name: 'Principal',
+      email: 'principal@school.com',
+      password: 'password',
+      description: 'Junior & Senior Secondary',
+      icon: '👨‍🎓'
+    },
+    'regular_admin': {
+      name: 'Regular Admin',
+      email: 'regularadmin@school.com',
+      password: 'password',
+      description: 'Senior Secondary School only',
+      icon: '🎯'
+    },
+    'teacher': {
+      name: 'Teacher',
+      email: '',
+      password: '',
+      description: 'Select school level →',
+      icon: '👩‍🏫',
+      hasSubOptions: true
+    },
+    'student': {
+      name: 'Student',
+      email: 'student-primary@school.com',
+      password: 'password',
+      description: 'View courses and grades',
+      icon: '👨‍🎓'
+    },
+    'parent': {
+      name: 'Parent',
+      email: 'parent@school.com',
+      password: 'password',
+      description: 'Monitor child progress',
+      icon: '👨‍👩‍👧'
+    }
+  };
+
+  // Auto-fill email and password when user type is selected
+  const handleUserTypeChange = (type) => {
+    if (type === 'teacher') {
+      setUserType(type);
+      setShowTeacherOptions(true);
+      setTeacherLevel('');
+      // Don't auto-fill yet — user needs to pick a school level
+      return;
+    }
+    setShowTeacherOptions(false);
+    setTeacherLevel('');
+    setUserType(type);
+    if (demoUsers[type]) {
+      setEmail(demoUsers[type].email);
+      setPassword(demoUsers[type].password);
+    }
+  };
+
+  // Handle teacher level selection
+  const handleTeacherLevelChange = (level) => {
+    setTeacherLevel(level);
+    if (teacherLevelOptions[level]) {
+      setEmail(teacherLevelOptions[level].email);
+      setPassword(teacherLevelOptions[level].password);
+    }
+  };
+
+  // If already logged in, redirect to school selection
   useEffect(() => {
     if (!isAuthenticated || !user) return;
 
-    switch (user.role) {
-      case 'admin':
-        navigate('/admin-dashboard', { replace: true });
-        break;
-      case 'teacher':
-        navigate('/teacher-dashboard', { replace: true });
-        break;
-      case 'student':
-        navigate('/student-dashboard', { replace: true });
-        break;
-      case 'parent':
-        navigate('/parent-dashboard', { replace: true });
-        break;
-      default:
-        navigate('/', { replace: true });
-    }
+    navigate('/school-selection', { replace: true });
   }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e) => {
@@ -49,23 +147,8 @@ const Login = () => {
       setLoading(true);
       const user = await login(email, password);
       
-      // Redirect based on role
-      switch (user.role) {
-        case 'admin':
-          navigate('/admin-dashboard');
-          break;
-        case 'teacher':
-          navigate('/teacher-dashboard');
-          break;
-        case 'student':
-          navigate('/student-dashboard');
-          break;
-        case 'parent':
-          navigate('/parent-dashboard');
-          break;
-        default:
-          navigate('/');
-      }
+      // After successful login, redirect to school selection
+      navigate('/school-selection');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
@@ -93,6 +176,103 @@ const Login = () => {
             {displayError && <ErrorAlert message={displayError} onClose={() => setError(null)} />}
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* User Type Selector (Demo Mode) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <Users size={16} className="inline mr-2" />
+                  Quick Login - Select User Type (Demo)
+                </label>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {Object.entries(demoUsers).map(([key, user]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleUserTypeChange(key)}
+                      className={`p-3 rounded-lg border-2 transition-all text-center text-sm font-medium ${
+                        userType === key
+                          ? 'border-blue-600 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-xl mb-1">{user.icon}</div>
+                      <div className="font-semibold text-xs">{user.name}</div>
+                      <div className="text-xs text-gray-500 mt-1">{user.description}</div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Teacher School Level Sub-Options */}
+                {showTeacherOptions && (
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <button
+                        type="button"
+                        onClick={() => { setShowTeacherOptions(false); setUserType(''); setTeacherLevel(''); setEmail(''); setPassword(''); }}
+                        className="p-1 rounded hover:bg-gray-100 text-gray-500"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <span className="text-sm font-semibold text-gray-700">👩‍🏫 Select Teacher School Level</span>
+                    </div>
+                    
+                    {/* Primary Section */}
+                    <p className="text-xs font-semibold text-green-700 mb-1 px-1">🟢 Primary</p>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      {Object.entries(teacherLevelOptions)
+                        .filter(([, opt]) => opt.category === 'Primary')
+                        .map(([key, opt]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => handleTeacherLevelChange(key)}
+                            className={`p-3 rounded-lg border-2 transition-all text-center text-sm font-medium ${
+                              teacherLevel === key
+                                ? 'border-green-600 bg-green-50 text-green-700'
+                                : 'border-gray-200 bg-white text-gray-700 hover:border-green-300'
+                            }`}
+                          >
+                            <div className="text-xl mb-1">{opt.icon}</div>
+                            <div className="font-semibold text-xs">{opt.name}</div>
+                            <div className="text-xs text-gray-500 mt-1">{opt.description}</div>
+                          </button>
+                        ))}
+                    </div>
+                    
+                    {/* Secondary Section */}
+                    <p className="text-xs font-semibold text-purple-700 mb-1 px-1">🟣 Secondary</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(teacherLevelOptions)
+                        .filter(([, opt]) => opt.category === 'Secondary')
+                        .map(([key, opt]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => handleTeacherLevelChange(key)}
+                            className={`p-3 rounded-lg border-2 transition-all text-center text-sm font-medium ${
+                              teacherLevel === key
+                                ? 'border-purple-600 bg-purple-50 text-purple-700'
+                                : 'border-gray-200 bg-white text-gray-700 hover:border-purple-300'
+                            }`}
+                          >
+                            <div className="text-xl mb-1">{opt.icon}</div>
+                            <div className="font-semibold text-xs">{opt.name}</div>
+                            <div className="text-xs text-gray-500 mt-1">{opt.description}</div>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-4">
+                  <p className="text-xs text-blue-700">
+                    <strong>💡 Tip:</strong> Click a user type above to auto-fill email and password
+                    {showTeacherOptions && !teacherLevel && (
+                      <span className="block mt-1 text-orange-600 font-semibold">⚠️ Please select a school level for Teacher</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
               {/* Email Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -160,12 +340,19 @@ const Login = () => {
 
             {/* Demo Credentials */}
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-xs text-gray-600 mb-3 font-medium">Demo Credentials:</p>
+              <p className="text-xs text-gray-600 mb-3 font-medium">📋 Demo Accounts:</p>
               <div className="space-y-2 text-xs text-gray-600">
-                <p><strong>Admin:</strong> admin@school.com / password</p>
-                <p><strong>Teacher:</strong> teacher@school.com / password</p>
-                <p><strong>Student:</strong> student@school.com / password</p>
-                <p><strong>Parent:</strong> parent@school.com / password</p>
+                <p><strong>👑 CEO Admin:</strong> admin@school.com (All 3 schools)</p>
+                <p><strong>👨‍🎓 Principal:</strong> principal@school.com (2 schools)</p>
+                <p><strong>🎯 Regular Admin:</strong> regularadmin@school.com (1 school)</p>
+                <p className="font-medium text-gray-700">👩‍🏫 Teachers (by school level):</p>
+                <p className="pl-4">🧒 Nursery: teacher-nursery@school.com</p>
+                <p className="pl-4">📚 Class (Primary): teacher@school.com</p>
+                <p className="pl-4">🏫 Junior Secondary: classteacher@school.com</p>
+                <p className="pl-4">🎓 Senior Secondary: teacher-senior@school.com</p>
+                <p><strong>👨‍🎓 Student:</strong> student-primary@school.com / password</p>
+                <p><strong>👨‍👩‍👧 Parent:</strong> parent@school.com / password</p>
+                <p className="text-blue-600 font-medium mt-2">All passwords: <code className="bg-gray-100 px-1 py-0.5 rounded">password</code></p>
               </div>
             </div>
           </div>

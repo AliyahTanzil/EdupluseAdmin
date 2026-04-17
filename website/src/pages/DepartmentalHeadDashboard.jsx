@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { getApiBaseUrlSync } from '../config/apiConfig';
 
 /**
  * Departmental Head Dashboard
@@ -26,9 +27,10 @@ const DepartmentalHeadDashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken');
+      const apiBase = getApiBaseUrlSync();
       
       // Fetch department teachers
-      const teachersRes = await fetch(`http://localhost:5001/api/teachers?department=${user.department}`, {
+      const teachersRes = await fetch(`${apiBase}/teachers?department=${user.department}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (teachersRes.ok) {
@@ -41,7 +43,7 @@ const DepartmentalHeadDashboard = () => {
       }
 
       // Fetch department subjects
-      const subjectsRes = await fetch(`http://localhost:5001/api/subjects?department=${user.department}`, {
+      const subjectsRes = await fetch(`${apiBase}/subjects?department=${user.department}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (subjectsRes.ok) {

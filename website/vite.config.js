@@ -6,7 +6,15 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    strictPort: true,
-    host: 'localhost'
+    strictPort: false,
+    host: 'localhost',
+    // F-8 fix: Add proxy to avoid CORS issues in development
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   }
 })

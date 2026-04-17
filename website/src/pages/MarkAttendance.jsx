@@ -212,58 +212,74 @@ const MarkAttendance = () => {
       setSaving(true);
       setError(null);
 
-      // Prepare bulk attendance data for the week
-      const attendanceData = [];
+      // Group attendance data by date — backend bulk expects one date per call
+      // with records having morning_status and afternoon_status per student
+      const dayBuckets = {}; // { "2026-04-06": { studentId: { morning_status, afternoon_status } } }
+
       daysOfWeek.forEach((date, dayIndex) => {
         const dateStr = date.toISOString().split('T')[0];
         const dayKey = `day${dayIndex}`;
-        
+
         Object.keys(weeklyAttendance).forEach(studentId => {
           const dayData = weeklyAttendance[studentId][dayKey];
-          
-          // Morning session
-          if (dayData.morning !== null) {
-            attendanceData.push({
-              class: selectedClass,
-              date: dateStr,
-              session: 'morning',
-              student_id: studentId,
-              status: dayData.morning
-            });
-          }
-          
-          // Afternoon session
-          if (dayData.afternoon !== null) {
-            attendanceData.push({
-              class: selectedClass,
-              date: dateStr,
-              session: 'afternoon',
-              student_id: studentId,
-              status: dayData.afternoon
-            });
+          const hasMorning = dayData.morning !== null;
+          const hasAfternoon = dayData.afternoon !== null;
+
+          if (hasMorning || hasAfternoon) {
+            if (!dayBuckets[dateStr]) dayBuckets[dateStr] = {};
+            if (!dayBuckets[dateStr][studentId]) {
+              dayBuckets[dateStr][studentId] = {
+                student_id: studentId,
+                morning_status: 'present',
+                afternoon_status: 'present',
+              };
+            }
+            if (hasMorning) dayBuckets[dateStr][studentId].morning_status = dayData.morning;
+            if (hasAfternoon) dayBuckets[dateStr][studentId].afternoon_status = dayData.afternoon;
           }
         });
       });
 
-      if (attendanceData.length === 0) {
+      const dates = Object.keys(dayBuckets);
+      if (dates.length === 0) {
         setError('Please mark attendance for at least one student and session');
         setSaving(false);
         return;
       }
 
-      // Submit attendance
-      const response = await attendanceAPI.markBulk({
-        class: selectedClass,
-        records: attendanceData
-      });
+      // Send one bulk request per date
+      let totalCreated = 0;
+      let totalUpdated = 0;
+      let lastError = null;
 
-      if (response.success) {
+      for (const dateStr of dates) {
+        const records = Object.values(dayBuckets[dateStr]);
+        try {
+          const response = await attendanceAPI.markBulk({
+            class: selectedClass,
+            date: dateStr,
+            records,
+            marked_by: 'admin',
+          });
+
+          if (response.success) {
+            totalCreated += response.created || 0;
+            totalUpdated += response.updated || 0;
+          } else {
+            lastError = response.message || `Failed for date ${dateStr}`;
+          }
+        } catch (dayErr) {
+          lastError = dayErr.message || `Error on date ${dateStr}`;
+        }
+      }
+
+      if (lastError && totalCreated === 0 && totalUpdated === 0) {
+        setError(lastError);
+      } else {
         setSuccess(true);
         setTimeout(() => {
           navigate('/attendance');
         }, 1500);
-      } else {
-        setError(response.message || 'Failed to mark attendance');
       }
     } catch (err) {
       setError(err.message || 'An error occurred while marking attendance');

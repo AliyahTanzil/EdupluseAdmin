@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { getApiBaseUrlSync } from '../config/apiConfig';
 
 /**
  * Subject Head Dashboard
@@ -25,9 +26,10 @@ const SubjectHeadDashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken');
+      const apiBase = getApiBaseUrlSync();
       
       // Fetch subject teachers
-      const teachersRes = await fetch(`http://localhost:5001/api/teachers?subject=${user.headingSubject}`, {
+      const teachersRes = await fetch(`${apiBase}/teachers?subject=${user.headingSubject}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (teachersRes.ok) {
@@ -40,7 +42,7 @@ const SubjectHeadDashboard = () => {
       }
 
       // Fetch classes offering subject
-      const classesRes = await fetch(`http://localhost:5001/api/classes?subject=${user.headingSubject}`, {
+      const classesRes = await fetch(`${apiBase}/classes?subject=${user.headingSubject}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (classesRes.ok) {

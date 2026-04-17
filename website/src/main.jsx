@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
+import { getApiBaseUrl } from './config/apiConfig.js'
 
 // Suppress extension communication errors
 window.addEventListener('error', (event) => {
@@ -21,8 +22,14 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
+// D-9 fix: Render immediately instead of waiting for backend port detection
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
-)
+);
+
+// Pre-warm backend port detection in the background (non-blocking)
+getApiBaseUrl().catch((error) => {
+  console.warn('Backend port detection failed:', error);
+});

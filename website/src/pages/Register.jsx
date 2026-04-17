@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, Button, ErrorAlert } from '../components/Shared';
-import { User, Mail, Lock, Eye, EyeOff, UserPlus, Users } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, UserPlus, Users, AlertCircle } from 'lucide-react';
+import { 
+  ADMIN_TYPES, 
+  SCHOOL_LEVELS, 
+  getSchoolOptionsForAdminType,
+  canViewMultipleSchools,
+  getAllowedSchoolLevels 
+} from '../config/schoolHierarchy';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -15,7 +22,15 @@ const Register = () => {
     confirmPassword: '',
     role: 'student',
     class: '',
-    phone: ''
+    phone: '',
+    schoolLevel: '', // For admin, teacher
+    adminType: '', // For admin account type (admin, principal, ceo, secretary, finance)
+    assignedSchools: [], // For admins that can manage multiple schools
+    department: '', // For admin, teacher
+    teacherType: '', // For teacher (class_master or regular_teacher)
+    parentSchool: '', // For parent
+    childrenCount: '1', // For parent
+    childrenNames: '' // For parent (comma-separated)
   });
   
   const [showPassword, setShowPassword] = useState(false);
@@ -53,13 +68,61 @@ const Register = () => {
 
     try {
       setLoading(true);
+      
+      // Validate required fields based on role
+      if (formData.role === 'admin' && !formData.adminType) {
+        setError('Please select admin account type');
+        setLoading(false);
+        return;
+      }
+      
+      if (formData.role === 'admin') {
+        if (canViewMultipleSchools(formData.adminType) && formData.assignedSchools.length === 0) {
+          setError('Please select at least one school');
+          setLoading(false);
+          return;
+        }
+        if (!canViewMultipleSchools(formData.adminType) && !formData.schoolLevel) {
+          setError('Please select a school level');
+          setLoading(false);
+          return;
+        }
+      }
+      
+      if (formData.role === 'teacher' && !formData.schoolLevel) {
+        setError('Please select school level for teacher');
+        setLoading(false);
+        return;
+      }
+      
+      if (formData.role === 'teacher' && formData.teacherType === 'class_master' && !formData.class) {
+        setError('Please select class for class master');
+        setLoading(false);
+        return;
+      }
+      
+      if (formData.role === 'parent' && !formData.parentSchool) {
+        setError('Please select school for parent');
+        setLoading(false);
+        return;
+      }
+      
       await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
         role: formData.role,
         class: formData.class,
-        phone: formData.phone
+        phone: formData.phone,
+        schoolLevel: formData.schoolLevel,
+        department: formData.department,
+        teacherType: formData.teacherType,
+        parentSchool: formData.parentSchool,
+        childrenCount: formData.childrenCount,
+        childrenNames: formData.childrenNames,
+        // New admin hierarchy fields
+        adminType: formData.role === 'admin' ? formData.adminType : undefined,
+        assignedSchools: formData.role === 'admin' && canViewMultipleSchools(formData.adminType) ? formData.assignedSchools : []
       });
 
       // Redirect to login
@@ -145,12 +208,13 @@ const Register = () => {
                   >
                     <option value="student">Student</option>
                     <option value="teacher">Teacher</option>
+                    <option value="admin">Admin</option>
                     <option value="parent">Parent</option>
                   </select>
                 </div>
               </div>
 
-              {/* Class Field - conditionally shown */}
+              {/* Class Field - for students */}
               {formData.role === 'student' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -166,6 +230,256 @@ const Register = () => {
                     disabled={loading}
                   />
                 </div>
+              )}
+
+              {/* ADMIN FIELDS */}
+              {formData.role === 'admin' && (
+                <>
+                  {/* Admin Account Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Admin Account Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="adminType"
+                      value={formData.adminType}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={loading}
+                    >
+                      <option value="">-- Select Admin Type --</option>
+                      <option value={ADMIN_TYPES.REGULAR_ADMIN}>Regular Admin (Single School)</option>
+                      <option value={ADMIN_TYPES.PRINCIPAL}>Principal (Multiple Schools)</option>
+                      <option value={ADMIN_TYPES.CEO}>CEO (All Schools - Super Admin)</option>
+                      <option value={ADMIN_TYPES.SECRETARY}>Secretary (Single School)</option>
+                      <option value={ADMIN_TYPES.FINANCE}>Finance Officer (All Schools Finance)</option>
+                    </select>
+                    {formData.adminType && (
+                      <p className="text-sm text-gray-600 mt-2 flex items-center gap-2">
+                        <AlertCircle size={16} />
+                        {(() => {
+                          const allowedSchools = getAllowedSchoolLevels(formData.adminType);
+                          if (allowedSchools.length === 1) {
+                            return `Can manage: ${allowedSchools.map(s => s.replace(/_/g, ' ')).join(', ')}`;
+                          } else if (allowedSchools.length > 1) {
+                            return `Can manage: ${allowedSchools.map(s => s.replace(/_/g, ' ')).join(', ')}`;
+                          } else {
+                            return 'Select one or more schools below';
+                          }
+                        })()}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* School Level Selection */}
+                  {formData.adminType && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {canViewMultipleSchools(formData.adminType) ? 'Schools' : 'School Level'} <span className="text-red-500">*</span>
+                      </label>
+                      
+                      {canViewMultipleSchools(formData.adminType) ? (
+                        // Multi-select for admins that can manage multiple schools
+                        <div className="space-y-2 border border-gray-300 rounded-lg p-3">
+                          {getSchoolOptionsForAdminType(formData.adminType)
+                            .filter(option => !option.disabled)
+                            .map(option => (
+                              <div key={option.value} className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  id={option.value}
+                                  checked={formData.assignedSchools.includes(option.value)}
+                                  onChange={(e) => {
+                                    const schoolValue = option.value;
+                                    if (e.target.checked) {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        assignedSchools: [...prev.assignedSchools, schoolValue]
+                                      }));
+                                    } else {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        assignedSchools: prev.assignedSchools.filter(s => s !== schoolValue)
+                                      }));
+                                    }
+                                  }}
+                                  className="w-4 h-4 text-blue-600 rounded"
+                                  disabled={loading}
+                                />
+                                <label htmlFor={option.value} className="ml-2 text-sm text-gray-700">
+                                  {option.label}
+                                </label>
+                              </div>
+                            ))}
+                        </div>
+                      ) : (
+                        // Single-select for admins that manage one school
+                        <select
+                          name="schoolLevel"
+                          value={formData.schoolLevel}
+                          onChange={handleChange}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          disabled={loading}
+                        >
+                          <option value="">-- Select School Level --</option>
+                          {getSchoolOptionsForAdminType(formData.adminType)
+                            .filter(option => !option.disabled)
+                            .map(option => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Department / Role
+                    </label>
+                    <input
+                      type="text"
+                      name="department"
+                      value={formData.department}
+                      onChange={handleChange}
+                      placeholder="e.g., Administration, Finance, Operations"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={loading}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* TEACHER FIELDS */}
+              {formData.role === 'teacher' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      School Level <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="schoolLevel"
+                      value={formData.schoolLevel}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={loading}
+                    >
+                      <option value="">-- Select School Level --</option>
+                      <option value="primary">Primary School</option>
+                      <option value="junior_secondary">Junior Secondary</option>
+                      <option value="senior_secondary">Senior Secondary</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Teacher Type
+                    </label>
+                    <select
+                      name="teacherType"
+                      value={formData.teacherType}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={loading}
+                    >
+                      <option value="">-- Select Teacher Type --</option>
+                      <option value="regular_teacher">Regular Teacher</option>
+                      <option value="class_master">Class Master</option>
+                      <option value="subject_head">Subject Head</option>
+                      <option value="department_head">Department Head</option>
+                    </select>
+                  </div>
+
+                  {formData.teacherType === 'class_master' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Class <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="class"
+                        value={formData.class}
+                        onChange={handleChange}
+                        placeholder="e.g., Class 10A, Form 1, SSS2"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        disabled={loading}
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Department / Subject Area
+                    </label>
+                    <input
+                      type="text"
+                      name="department"
+                      value={formData.department}
+                      onChange={handleChange}
+                      placeholder="e.g., Mathematics, Sciences, Languages"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={loading}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* PARENT FIELDS */}
+              {formData.role === 'parent' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      School <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="parentSchool"
+                      value={formData.parentSchool}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={loading}
+                    >
+                      <option value="">-- Select School --</option>
+                      <option value="primary">Primary School</option>
+                      <option value="secondary">Secondary School</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Number of Children in School
+                    </label>
+                    <select
+                      name="childrenCount"
+                      value={formData.childrenCount}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={loading}
+                    >
+                      <option value="1">1 Child</option>
+                      <option value="2">2 Children</option>
+                      <option value="3">3 Children</option>
+                      <option value="4">4+ Children</option>
+                    </select>
+                  </div>
+
+                  {parseInt(formData.childrenCount) > 1 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Children Names (comma-separated)
+                      </label>
+                      <input
+                        type="text"
+                        name="childrenNames"
+                        value={formData.childrenNames}
+                        onChange={handleChange}
+                        placeholder="e.g., John, Mary, David"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        disabled={loading}
+                      />
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Phone Field */}

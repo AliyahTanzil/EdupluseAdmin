@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getApiBaseUrlSync } from '../config/apiConfig';
 import { Card, Button } from '../components/Shared';
-import { BookOpen, Users, BarChart3, LogOut, GraduationCap, Clock, TrendingUp, User, ChevronDown } from 'lucide-react';
+import { BookOpen, Users, BarChart3, LogOut, GraduationCap, Clock, TrendingUp, User, ChevronDown, AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [stats, setStats] = useState({
     totalClasses: 0,
@@ -28,9 +29,10 @@ const TeacherDashboard = () => {
     try {
       const token = localStorage.getItem('authToken');
       const today = new Date().toISOString().split('T')[0];
+      const apiBase = getApiBaseUrlSync();
       const [subjectsRes, attendanceRes] = await Promise.all([
-        fetch('http://localhost:5001/api/subjects', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`http://localhost:5001/api/attendance?date=${today}`, { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch(`${apiBase}/subjects`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${apiBase}/attendance?date=${today}`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
       const subjectsData = await subjectsRes.json();

@@ -75,14 +75,23 @@ const Landing = () => {
               <BookOpen size={32} className="text-blue-600" />
               <span className="text-2xl font-bold text-gray-800">EduPlus Admin</span>
             </div>
-            <Button 
-              variant="primary"
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2"
-            >
-              Enter Dashboard
-              <ArrowRight size={18} />
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="secondary"
+                onClick={() => navigate('/login')}
+                className="flex items-center gap-2"
+              >
+                Login
+              </Button>
+              <Button 
+                variant="primary"
+                onClick={() => navigate('/login')}
+                className="flex items-center gap-2"
+              >
+                Start
+                <ArrowRight size={18} />
+              </Button>
+            </div>
           </div>
         </div>
       </nav>
@@ -100,7 +109,7 @@ const Landing = () => {
             <div className="flex gap-4">
               <Button 
                 variant="primary"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/login')}
                 className="px-8 py-4 text-lg flex items-center gap-2"
               >
                 <Zap size={20} />

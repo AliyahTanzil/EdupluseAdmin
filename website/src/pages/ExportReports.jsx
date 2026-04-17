@@ -85,18 +85,22 @@ const ExportReports = () => {
         return;
       }
 
+      // Validate class selection
+      if (selectedClass === 'all') {
+        setError('Please select a specific class to export');
+        setExporting(false);
+        return;
+      }
+
       const payload = {
-        type: selectedReport,
+        report_type: selectedReport,
+        class: selectedClass,
+        start_date: dateRange.start,
+        end_date: dateRange.end,
         format: format.toLowerCase(),
-        dateFrom: dateRange.start,
-        dateTo: dateRange.end,
-        classId: selectedClass === 'all' ? null : parseInt(selectedClass),
-        includeBreakdown: exportOptions.includeBreakdown,
-        includeCharts: exportOptions.includeCharts,
-        sendEmail: exportOptions.sendEmail,
       };
 
-      const response = await reportsAPI.export(payload);
+      const response = await reportsAPI.exportReport(payload);
 
       if (response.success) {
         setSuccess(true);
@@ -207,8 +211,8 @@ const ExportReports = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Classes</option>
-              {classes.map(cls => (
-                <option key={cls.id} value={cls.id}>{cls.name}</option>
+              {classes.map((cls, idx) => (
+                <option key={cls.name || `cls-${idx}`} value={cls.name}>{cls.name}</option>
               ))}
             </select>
           </div>

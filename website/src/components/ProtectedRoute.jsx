@@ -8,6 +8,31 @@ import { LoadingSpinner } from '../components/Shared';
  * Restricts access based on user role and teacher type
  * Supports multiple roles and teacher-specific types
  */
+
+// Helper: resolve the effective base role from user object
+// Returns 'admin', 'teacher', 'student', 'parent', or the raw role string
+const resolveBaseRole = (user) => {
+  if (!user) return null;
+  const roleStr = typeof user.role === 'object' ? user.role?.id : user.role;
+  
+  // Direct base role match
+  if (['admin', 'teacher', 'student', 'parent'].includes(roleStr)) {
+    return roleStr;
+  }
+  
+  // Fallback: use adminType or teacherType to determine base role
+  if (user.adminType) return 'admin';
+  if (user.teacherType) return 'teacher';
+  
+  // Fallback: map known specific role IDs to base roles
+  const adminRoleIds = ['head_master', 'principal', 'vice_principal', 'secretary', 'treasurer', 'ceo'];
+  const teacherRoleIds = ['class_master', 'ordinary_teacher', 'head_of_department', 'subject_head', 'regular_teacher'];
+  if (adminRoleIds.includes(roleStr)) return 'admin';
+  if (teacherRoleIds.includes(roleStr)) return 'teacher';
+  
+  return roleStr; // last resort
+};
+
 export const ProtectedRoute = ({ 
   children, 
   requiredRoles = [],
@@ -25,25 +50,29 @@ export const ProtectedRoute = ({
     return <Navigate to="/login" replace />;
   }
 
+  const baseRole = resolveBaseRole(user);
+
   // Check if admin-only access required
-  if (requireAdmin && user.role !== 'admin') {
-    return <Navigate to="/unauthorized" replace />;
+  if (requireAdmin) {
+    if (baseRole !== 'admin') {
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   // Check role requirements
   if (requiredRoles.length > 0) {
-    if (!requiredRoles.includes(user.role)) {
+    if (!requiredRoles.includes(baseRole)) {
       return <Navigate to="/unauthorized" replace />;
     }
   }
 
   // Check teacher type requirements (if user is a teacher)
   if (requiredTeacherTypes.length > 0) {
-    if (user.role !== 'teacher') {
+    if (baseRole !== 'teacher') {
       return <Navigate to="/unauthorized" replace />;
     }
 
-    const userTeacherType = user.teacherType || 'regular';
+    const userTeacherType = user.teacherType || user.roleId || 'regular';
     if (!requiredTeacherTypes.includes(userTeacherType)) {
       return <Navigate to="/unauthorized" replace />;
     }

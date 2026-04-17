@@ -4,15 +4,27 @@
  * Automatically syncs when online
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+// D-6 fix: Use canonical config/apiConfig.js instead of duplicate port detection
+import { getApiBaseUrl, getApiBaseUrlSync } from '../config/apiConfig.js';
+
+let API_BASE_URL = getApiBaseUrlSync();
+
+// Initialize with async detection  
+(async () => {
+  API_BASE_URL = await getApiBaseUrl();
+})();
 
 // Helper function to make API calls
 const makeRequest = async (endpoint, options = {}) => {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
+    // Automatically attach auth token from localStorage
+    const token = localStorage.getItem('authToken');
+    const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...options.headers,
       },
       ...options,
@@ -884,6 +896,118 @@ export const devicesAPI = {
   },
 };
 
+// ==================== GRADES API ====================
+
+export const gradesAPI = {
+  getAll: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/grades${queryString ? `?${queryString}` : ''}`;
+    
+    try {
+      const response = await makeRequest(endpoint);
+      setCachedData(endpoint, response);
+      return response;
+    } catch (error) {
+      return getCachedData(endpoint) || { success: false, data: [] };
+    }
+  },
+
+  getStudentGrades: async (studentId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/grades/student/${studentId}${queryString ? `?${queryString}` : ''}`;
+    
+    try {
+      const response = await makeRequest(endpoint);
+      setCachedData(endpoint, response);
+      return response;
+    } catch (error) {
+      return getCachedData(endpoint) || { success: false, data: [] };
+    }
+  },
+
+  getStudentReportCard: async (studentId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/grades/student/${studentId}/report-card${queryString ? `?${queryString}` : ''}`;
+    
+    try {
+      const response = await makeRequest(endpoint);
+      setCachedData(endpoint, response);
+      return response;
+    } catch (error) {
+      return getCachedData(endpoint) || { success: false };
+    }
+  },
+
+  getClassGrades: async (classId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/grades/class/${classId}${queryString ? `?${queryString}` : ''}`;
+    
+    try {
+      const response = await makeRequest(endpoint);
+      setCachedData(endpoint, response);
+      return response;
+    } catch (error) {
+      return getCachedData(endpoint) || { success: false, data: [] };
+    }
+  },
+
+  create: async (gradeData) => {
+    const endpoint = '/grades';
+    
+    try {
+      const response = await makeRequest(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(gradeData),
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to create grade:', error);
+      throw error;
+    }
+  },
+
+  update: async (id, updates) => {
+    const endpoint = `/grades/${id}`;
+    
+    try {
+      const response = await makeRequest(endpoint, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to update grade:', error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    const endpoint = `/grades/${id}`;
+    
+    try {
+      const response = await makeRequest(endpoint, {
+        method: 'DELETE',
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to delete grade:', error);
+      throw error;
+    }
+  },
+
+  getStudentGPA: async (studentId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/grades/analytics/gpa/${studentId}${queryString ? `?${queryString}` : ''}`;
+    
+    try {
+      const response = await makeRequest(endpoint);
+      return response;
+    } catch (error) {
+      return { success: false, data: { gpa: 0 } };
+    }
+  },
+};
+
 // ==================== SYNC API ====================
 
 export const syncAPI = {
@@ -1002,6 +1126,7 @@ export default {
   classesAPI,
   reportsAPI,
   devicesAPI,
+  gradesAPI,
   syncAPI,
   healthAPI,
   apiUtils,

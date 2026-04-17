@@ -219,7 +219,8 @@ const Settings = () => {
           </div>
         </Card>
 
-        {/* Security & Backup */}
+        {/* Security & Backup - D-18 fix: Only show to super admin users */}
+        {(user?.isSuperUser || user?.adminType === 'ceo' || user?.adminType === 'principal') && (
         <Card className="mb-6">
           <div className="p-6 border-b">
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -267,6 +268,7 @@ const Settings = () => {
             )}
           </div>
         </Card>
+        )}
 
         {/* Action Buttons */}
         <div className="flex gap-4 justify-end">

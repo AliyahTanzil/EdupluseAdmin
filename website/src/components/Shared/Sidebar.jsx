@@ -13,6 +13,7 @@ import {
   FileCheck,
   BarChart3,
   Building2,
+  GraduationCap,
 } from 'lucide-react';
 
 /**
@@ -36,6 +37,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
         { label: 'Subjects', icon: BookOpen, path: '/subjects' },
         { label: 'Timetable', icon: Clock, path: '/timetable' },
         { label: 'Attendance', icon: FileCheck, path: '/attendance' },
+        { label: 'Class Dashboards', icon: GraduationCap, path: '/class-list' },
         { label: 'Reports', icon: BarChart3, path: '/reports' },
         { label: 'Settings', icon: LayoutDashboard, path: '/settings' },
       ];

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Card, LoadingSpinner, ErrorAlert } from '../components/Shared';
-import { Plus, Edit, Trash2, Search, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, X, ClipboardList } from 'lucide-react';
 import { studentsAPI } from '../services/api';
 
 const Students = () => {
@@ -92,6 +92,12 @@ const Students = () => {
   ];
 
   const actions = [
+    {
+      label: 'Results',
+      icon: ClipboardList,
+      onClick: (row) => navigate(`/student-results/${row.id}`),
+      className: 'bg-green-600 text-white hover:bg-green-700',
+    },
     {
       label: 'Edit',
       icon: Edit,

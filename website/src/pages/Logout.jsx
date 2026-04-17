@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut, Loader } from 'lucide-react';
@@ -6,6 +6,8 @@ import { LogOut, Loader } from 'lucide-react';
 const Logout = () => {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  // D-26 fix: Capture user name before logout clears the user object
+  const [userName] = useState(() => user?.name || '');
 
   useEffect(() => {
     // Perform logout
@@ -42,7 +44,7 @@ const Logout = () => {
           
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Logging Out</h1>
           <p className="text-gray-600 mb-6">
-            {user?.name ? `Goodbye, ${user.name}!` : 'See you soon!'}
+            {userName ? `Goodbye, ${userName}!` : 'See you soon!'}
           </p>
           
           <div className="flex justify-center mb-6">
