@@ -80,6 +80,7 @@ const initializeLocalDB = () => {
       name TEXT NOT NULL,
       roll TEXT NOT NULL UNIQUE,
       class TEXT NOT NULL,
+      school_id TEXT,
       email TEXT,
       phone TEXT,
       parent_phone TEXT,
@@ -89,7 +90,8 @@ const initializeLocalDB = () => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       synced_at DATETIME,
-      is_deleted INTEGER DEFAULT 0
+      is_deleted INTEGER DEFAULT 0,
+      FOREIGN KEY (school_id) REFERENCES schools(id)
     )
   `);
 
@@ -98,6 +100,7 @@ const initializeLocalDB = () => {
     CREATE TABLE IF NOT EXISTS teachers (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
+      school_id TEXT,
       email TEXT UNIQUE,
       phone TEXT,
       subject_id TEXT,
@@ -111,6 +114,7 @@ const initializeLocalDB = () => {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       synced_at DATETIME,
       is_deleted INTEGER DEFAULT 0,
+      FOREIGN KEY (school_id) REFERENCES schools(id),
       FOREIGN KEY (subject_id) REFERENCES subjects(id)
     )
   `);
@@ -122,6 +126,7 @@ const initializeLocalDB = () => {
       name TEXT NOT NULL,
       code TEXT NOT NULL,
       class TEXT NOT NULL,
+      school_id TEXT,
       description TEXT,
       credit_hours REAL DEFAULT 0,
       category TEXT DEFAULT 'Academic',
@@ -130,8 +135,9 @@ const initializeLocalDB = () => {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       synced_at DATETIME,
       is_deleted INTEGER DEFAULT 0,
+      FOREIGN KEY (school_id) REFERENCES schools(id),
       FOREIGN KEY (teacher_id) REFERENCES teachers(id),
-      UNIQUE(name, code, class)
+      UNIQUE(name, code, class, school_id)
     )
   `);
 
@@ -141,6 +147,7 @@ const initializeLocalDB = () => {
       id TEXT PRIMARY KEY,
       student_id TEXT NOT NULL,
       class TEXT NOT NULL,
+      school_id TEXT,
       date DATE NOT NULL,
       morning_status TEXT DEFAULT 'absent',
       afternoon_status TEXT DEFAULT 'absent',
@@ -151,6 +158,7 @@ const initializeLocalDB = () => {
       synced_at DATETIME,
       is_deleted INTEGER DEFAULT 0,
       FOREIGN KEY (student_id) REFERENCES students(id),
+      FOREIGN KEY (school_id) REFERENCES schools(id),
       UNIQUE(student_id, date)
     )
   `);
@@ -215,6 +223,7 @@ const initializeLocalDB = () => {
       student_id TEXT NOT NULL,
       subject_id TEXT NOT NULL,
       class_id TEXT,
+      school_id TEXT,
       score REAL NOT NULL,
       grade TEXT,
       term TEXT NOT NULL,
@@ -226,7 +235,8 @@ const initializeLocalDB = () => {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       is_deleted INTEGER DEFAULT 0,
       FOREIGN KEY (student_id) REFERENCES students(id),
-      FOREIGN KEY (subject_id) REFERENCES subjects(id)
+      FOREIGN KEY (subject_id) REFERENCES subjects(id),
+      FOREIGN KEY (school_id) REFERENCES schools(id)
     )
   `);
 
@@ -322,18 +332,31 @@ const initializeLocalDB = () => {
 
   safeAddColumn('schools', 'is_deleted', 'INTEGER DEFAULT 0');
   safeAddColumn('users', 'is_deleted', 'INTEGER DEFAULT 0');
+  
+  // Phase 3: Add school_id column for hierarchy filtering
+  safeAddColumn('students', 'school_id', 'TEXT');
+  safeAddColumn('teachers', 'school_id', 'TEXT');
+  safeAddColumn('subjects', 'school_id', 'TEXT');
+  safeAddColumn('attendance', 'school_id', 'TEXT');
+  safeAddColumn('grades', 'school_id', 'TEXT');
+  safeAddColumn('classes', 'school_id', 'TEXT');
 
   // C-2 fix: Add indexes for frequently queried columns
   db.exec(`CREATE INDEX IF NOT EXISTS idx_students_class ON students(class)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_students_school_id ON students(school_id)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_students_is_deleted ON students(is_deleted)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_teachers_school_id ON teachers(school_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_teachers_is_deleted ON teachers(is_deleted)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_subjects_school_id ON subjects(school_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_subjects_is_deleted ON subjects(is_deleted)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_attendance_school_id ON attendance(school_id)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_attendance_student_id ON attendance(student_id)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_attendance_is_deleted ON attendance(is_deleted)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_grades_student_id ON grades(student_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_grades_school_id ON grades(school_id)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_grades_subject_id ON grades(subject_id)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_grades_is_deleted ON grades(is_deleted)`);
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_teachers_is_deleted ON teachers(is_deleted)`);
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_subjects_is_deleted ON subjects(is_deleted)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_schools_is_deleted ON schools(is_deleted)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_assignments_class_id ON assignments(class_id)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_assignments_is_deleted ON assignments(is_deleted)`);
@@ -352,21 +375,26 @@ const getStudent = (id) => {
   return stmt.get(id);
 };
 
-const getAllStudents = (limit = 100, offset = 0) => {
+const getAllStudents = (limit = 100, offset = 0, schoolId = null) => {
+  if (schoolId) {
+    const stmt = db.prepare('SELECT * FROM students WHERE school_id = ? AND is_deleted = 0 LIMIT ? OFFSET ?');
+    return stmt.all(schoolId, limit, offset);
+  }
   const stmt = db.prepare('SELECT * FROM students WHERE is_deleted = 0 LIMIT ? OFFSET ?');
   return stmt.all(limit, offset);
 };
 
 const insertStudent = (student) => {
   const stmt = db.prepare(`
-    INSERT INTO students (id, name, roll, class, email, phone, parent_phone, address, date_of_birth, photo_url)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO students (id, name, roll, class, school_id, email, phone, parent_phone, address, date_of_birth, photo_url)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   return stmt.run(
     student.id,
     student.name,
     student.roll,
     student.class,
+    student.school_id,
     student.email,
     student.phone,
     student.parent_phone,
@@ -393,19 +421,24 @@ const getTeacher = (id) => {
   return stmt.get(id);
 };
 
-const getAllTeachers = (limit = 100, offset = 0) => {
+const getAllTeachers = (limit = 100, offset = 0, schoolId = null) => {
+  if (schoolId) {
+    const stmt = db.prepare('SELECT * FROM teachers WHERE school_id = ? AND is_deleted = 0 LIMIT ? OFFSET ?');
+    return stmt.all(schoolId, limit, offset);
+  }
   const stmt = db.prepare('SELECT * FROM teachers WHERE is_deleted = 0 LIMIT ? OFFSET ?');
   return stmt.all(limit, offset);
 };
 
 const insertTeacher = (teacher) => {
   const stmt = db.prepare(`
-    INSERT INTO teachers (id, name, email, phone, subject_id, qualification, experience, classes_assigned, hire_date, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO teachers (id, name, school_id, email, phone, subject_id, qualification, experience, classes_assigned, hire_date, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   return stmt.run(
     teacher.id,
     teacher.name,
+    teacher.school_id,
     teacher.email,
     teacher.phone,
     teacher.subject_id,
@@ -444,7 +477,15 @@ const getStudentAttendance = (studentId, limit = 100, offset = 0) => {
   return stmt.all(studentId, limit, offset);
 };
 
-const getClassAttendance = (className, date) => {
+const getClassAttendance = (className, date, schoolId = null) => {
+  if (schoolId) {
+    const stmt = db.prepare(`
+      SELECT * FROM attendance 
+      WHERE class = ? AND date = ? AND school_id = ? AND is_deleted = 0 
+      ORDER BY student_id
+    `);
+    return stmt.all(className, date, schoolId);
+  }
   const stmt = db.prepare(`
     SELECT * FROM attendance 
     WHERE class = ? AND date = ? AND is_deleted = 0 
@@ -455,13 +496,14 @@ const getClassAttendance = (className, date) => {
 
 const insertAttendance = (attendance) => {
   const stmt = db.prepare(`
-    INSERT INTO attendance (id, student_id, class, date, morning_status, afternoon_status, remarks, marked_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO attendance (id, student_id, class, school_id, date, morning_status, afternoon_status, remarks, marked_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   return stmt.run(
     attendance.id,
     attendance.student_id,
     attendance.class,
+    attendance.school_id,
     attendance.date,
     attendance.morning_status,
     attendance.afternoon_status,
@@ -549,21 +591,26 @@ const getSubject = (id) => {
   return stmt.get(id);
 };
 
-const getAllSubjects = (limit = 100, offset = 0) => {
+const getAllSubjects = (limit = 100, offset = 0, schoolId = null) => {
+  if (schoolId) {
+    const stmt = db.prepare('SELECT * FROM subjects WHERE school_id = ? AND is_deleted = 0 LIMIT ? OFFSET ?');
+    return stmt.all(schoolId, limit, offset);
+  }
   const stmt = db.prepare('SELECT * FROM subjects WHERE is_deleted = 0 LIMIT ? OFFSET ?');
   return stmt.all(limit, offset);
 };
 
 const insertSubject = (subject) => {
   const stmt = db.prepare(`
-    INSERT INTO subjects (id, name, code, class, description, credit_hours, category, created_at, updated_at, synced_at, is_deleted)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO subjects (id, name, code, class, school_id, description, credit_hours, category, created_at, updated_at, synced_at, is_deleted)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   return stmt.run(
     subject.id,
     subject.name,
     subject.code,
     subject.class,
+    subject.school_id,
     subject.description,
     subject.credit_hours,
     subject.category,

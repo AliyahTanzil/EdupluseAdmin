@@ -3,15 +3,27 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const db = require('../database/local');
 const syncService = require('../services/syncService');
+const { requirePermission, requireSchoolFilter } = require('../middleware/permissions');
 
-// Get all teachers with optional filtering by subject
-router.get('/', (req, res) => {
+// Get all teachers with optional filtering by subject and school
+router.get('/', requireSchoolFilter, (req, res) => {
   try {
     const { subject_id, class_filter, limit = 50, offset = 0 } = req.query;
+    const schoolId = req.query.school_id;
+    const schoolFilter = req.schoolFilter; // Array of allowed school IDs
     
     const database = db.getDatabase();
     let query = 'SELECT * FROM teachers WHERE is_deleted = 0';
     const params = [];
+
+    if (schoolId) {
+      query += ' AND school_id = ?';
+      params.push(schoolId);
+    } else if (schoolFilter && Array.isArray(schoolFilter) && schoolFilter.length > 0) {
+      const placeholders = schoolFilter.map(() => '?').join(',');
+      query += ` AND school_id IN (${placeholders})`;
+      params.push(...schoolFilter);
+    }
 
     if (subject_id) {
       query += ' AND subject_id = ?';
@@ -31,6 +43,16 @@ router.get('/', (req, res) => {
     // Get total count
     let countQuery = 'SELECT COUNT(*) as count FROM teachers WHERE is_deleted = 0';
     const countParams = [];
+
+    if (schoolId) {
+      countQuery += ' AND school_id = ?';
+      countParams.push(schoolId);
+    } else if (schoolFilter && Array.isArray(schoolFilter) && schoolFilter.length > 0) {
+      const placeholders = schoolFilter.map(() => '?').join(',');
+      countQuery += ` AND school_id IN (${placeholders})`;
+      countParams.push(...schoolFilter);
+    }
+
     if (subject_id) {
       countQuery += ' AND subject_id = ?';
       countParams.push(subject_id);
@@ -55,14 +77,23 @@ router.get('/', (req, res) => {
   }
 });
 
-// Get single teacher by ID (B-22 fix: add permission check)
-router.get('/:id', requirePermission('view_teachers'), (req, res) => {
+// Get single teacher by ID
+router.get('/:id', requirePermission('view_teachers'), requireSchoolFilter, (req, res) => {
   try {
     const { id } = req.params;
     const teacher = db.getTeacher(id);
 
     if (!teacher) {
       return res.status(404).json({ success: false, message: 'Teacher not found' });
+    }
+
+    // Security check: Ensure teacher belongs to user's assigned schools
+    const schoolFilter = req.schoolFilter;
+    if (schoolFilter && !schoolFilter.includes(teacher.school_id) && !req.user.isSuperUser && req.user.adminType !== 'ceo') {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: You do not have access to this teacher data'
+      });
     }
 
     res.status(200).json({ success: true, data: teacher });
@@ -73,9 +104,9 @@ router.get('/:id', requirePermission('view_teachers'), (req, res) => {
 });
 
 // Create new teacher
-router.post('/', (req, res) => {
+router.post('/', requirePermission('manage_teachers'), requireSchoolFilter, (req, res) => {
   try {
-    const { name, email, phone, subject_id, qualification, experience, classes_assigned, hire_date, status } = req.body;
+    const { name, email, phone, subject_id, qualification, experience, classes_assigned, hire_date, status, school_id } = req.body;
 
     // Validation
     if (!name || !email || !phone || !subject_id) {
@@ -85,12 +116,16 @@ router.post('/', (req, res) => {
       });
     }
 
+    // Enforce school_id from middleware if not provided
+    const finalSchoolId = school_id || req.query.school_id;
+
     const id = uuidv4();
     const now = new Date().toISOString();
 
     const newTeacher = {
       id,
       name,
+      school_id: finalSchoolId,
       email,
       phone,
       subject_id,

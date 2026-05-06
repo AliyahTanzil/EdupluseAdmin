@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { dashboardAPI } from '../../services/api';
 
 const DashboardScreen = ({ navigation }) => {
@@ -159,6 +159,42 @@ const DashboardScreen = ({ navigation }) => {
         >
           <MaterialIcons name="person-add" size={24} color="#3B82F6" />
           <Text style={styles.actionButtonText}>Add Student</Text>
+          <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => navigation.navigate('Teachers')}
+        >
+          <MaterialIcons name="person-pin" size={24} color="#3B82F6" />
+          <Text style={styles.actionButtonText}>Manage Teachers</Text>
+          <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => navigation.navigate('Attendance')}
+        >
+          <MaterialIcons name="event-available" size={24} color="#3B82F6" />
+          <Text style={styles.actionButtonText}>Mark Attendance</Text>
+          <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => navigation.navigate('Timetable')}
+        >
+          <MaterialIcons name="event-note" size={24} color="#3B82F6" />
+          <Text style={styles.actionButtonText}>View Timetable</Text>
+          <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => navigation.navigate('Reports')}
+        >
+          <MaterialIcons name="assessment" size={24} color="#3B82F6" />
+          <Text style={styles.actionButtonText}>Generate Reports</Text>
           <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
         </TouchableOpacity>
 

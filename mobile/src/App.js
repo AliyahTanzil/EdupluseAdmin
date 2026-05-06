@@ -7,7 +7,7 @@ import { StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
-import store from './redux/store';
+import { store } from './redux/store';
 import { setAuth } from './redux/slices/authSlice';
 
 // Auth Screens
@@ -22,10 +22,17 @@ import SchoolsScreen from './screens/schools/SchoolsScreen';
 import { SchoolDetailsScreen } from './screens/schools/SchoolDetailsScreen';
 import StudentsScreen from './screens/students/StudentsScreen';
 import StudentDetailsScreen from './screens/students/StudentDetailsScreen';
+import AddEditStudentScreen from './screens/students/AddEditStudentScreen';
 import StudentReportCardScreen from './screens/students/StudentReportCardScreen';
+import TeachersScreen from './screens/teachers/TeachersScreen';
+import TeacherDetailScreen from './screens/teachers/TeacherDetailScreen';
+import AddEditTeacherScreen from './screens/teachers/AddEditTeacherScreen';
 import GradesScreen from './screens/grades/GradesScreen';
 import AttendanceScreen from './screens/attendance/AttendanceScreen';
+import TimetableScreen from './screens/timetable/TimetableScreen';
+import EditTimetableScreen from './screens/timetable/EditTimetableScreen';
 import ReportsScreen from './screens/reports/ReportsScreen';
+import GenerateReportScreen from './screens/reports/GenerateReportScreen';
 import SettingsScreen from './screens/settings/SettingsScreen';
 
 // Section screens
@@ -107,9 +114,18 @@ function RootNavigator() {
             <Stack.Screen name="CreateClass" component={CreateClassScreen} options={{ title: 'Create Class', headerShown: true, headerTintColor: '#3B82F6' }} />
             <Stack.Screen name="DashboardStack" component={DashboardNavigator} options={{ animationEnabled: false }} />
             <Stack.Screen name="SchoolDetails" component={SchoolDetailsScreen} options={{ title: 'School Details', headerShown: true }} />
+            <Stack.Screen name="AddStudent" component={AddEditStudentScreen} options={{ title: 'Add Student', headerShown: true }} />
+            <Stack.Screen name="EditStudent" component={AddEditStudentScreen} options={{ title: 'Edit Student', headerShown: true }} />
             <Stack.Screen name="StudentDetails" component={StudentDetailsScreen} options={{ title: 'Student Details', headerShown: true }} />
+            <Stack.Screen name="Teachers" component={TeachersScreen} options={{ title: 'Teachers', headerShown: true }} />
+            <Stack.Screen name="TeacherDetails" component={TeacherDetailScreen} options={{ title: 'Teacher Details', headerShown: true }} />
+            <Stack.Screen name="AddTeacher" component={AddEditTeacherScreen} options={{ title: 'Add Teacher', headerShown: true }} />
+            <Stack.Screen name="EditTeacher" component={AddEditTeacherScreen} options={{ title: 'Edit Teacher', headerShown: true }} />
             <Stack.Screen name="StudentReportCard" component={StudentReportCardScreen} options={{ title: 'Report Card', headerShown: true }} />
             <Stack.Screen name="Attendance" component={AttendanceScreen} options={{ title: 'Attendance', headerShown: true }} />
+            <Stack.Screen name="Timetable" component={TimetableScreen} options={{ title: 'Timetable', headerShown: true }} />
+            <Stack.Screen name="EditTimetable" component={EditTimetableScreen} options={{ title: 'Edit Timetable', headerShown: true }} />
+            <Stack.Screen name="GenerateReport" component={GenerateReportScreen} options={{ title: 'Generate Report', headerShown: true }} />
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings', headerShown: true }} />
           </>
         ) : (

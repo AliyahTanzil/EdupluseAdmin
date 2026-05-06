@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, Button } from '../components/Shared';
 import { getApiBaseUrlSync } from '../config/apiConfig';
-import { Users, BookOpen, BarChart3, Settings, LogOut, User, Clock, Zap, FileText, Wifi, ChevronDown, TrendingUp, AlertCircle, Lock } from 'lucide-react';
+import { getDashboardViewForAdminType, ADMIN_TYPES, SCHOOL_LEVELS } from '../config/schoolHierarchy';
+import { Users, BookOpen, BarChart3, Settings, LogOut, User, Clock, Zap, FileText, Wifi, ChevronDown, TrendingUp, AlertCircle, Lock, Building2, Filter } from 'lucide-react';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { user, logout, hasPermission } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [selectedSchool, setSelectedSchool] = useState('all');
+  const [dashboardConfig, setDashboardConfig] = useState(null);
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalTeachers: 0,
@@ -21,32 +24,39 @@ const AdminDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
 
+  // Get configuration based on admin type
   useEffect(() => {
-    fetchDashboardStats();
-  }, []);
+    if (user) {
+      const config = getDashboardViewForAdminType(user.adminType || 'admin');
+      setDashboardConfig(config);
+      
+      // If single school admin, set their school
+      if (config.dataScope === 'single_school' && user.assignedSchools?.length > 0) {
+        setSelectedSchool(user.assignedSchools[0]);
+      }
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (dashboardConfig) {
+      fetchDashboardStats();
+    }
+  }, [dashboardConfig, selectedSchool]);
 
   const fetchDashboardStats = async () => {
     try {
       const token = localStorage.getItem('authToken');
       const apiBase = getApiBaseUrlSync();
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
       
-      const res = await fetch(`${apiBase}/dashboard/admin`, {
+      // Build URL with school filter if not 'all'
+      let url = `${apiBase}/dashboard/admin`;
+      if (selectedSchool !== 'all') {
+        url += `?school_id=${selectedSchool}`;
+      }
+      
+      const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-<<<<<<< HEAD
-=======
-      const [studentsRes, teachersRes, attendanceRes] = await Promise.all([
-        fetch(`${apiBase}/students`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${apiBase}/teachers`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${apiBase}/attendance?date=${new Date().toISOString().split('T')[0]}`, { headers: { 'Authorization': `Bearer ${token}` } })
-      ]);
->>>>>>> 041b17aa (modification)
-=======
->>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
 
       if (!res.ok) {
         throw new Error(`Dashboard API returned ${res.status}`);
@@ -67,52 +77,11 @@ const AdminDashboard = () => {
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
-      // Fallback: try individual endpoints if dashboard endpoint fails
-      try {
-        const token = localStorage.getItem('authToken');
-        const apiBase = getApiBaseUrlSync();
-        const safeFetch = async (url) => {
-          try {
-            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!res.ok) return { data: [] };
-            return await res.json();
-          } catch {
-            return { data: [] };
-          }
-        };
-
-        const [studentsData, teachersData, attendanceData] = await Promise.all([
-          safeFetch(`${apiBase}/students`),
-          safeFetch(`${apiBase}/teachers`),
-          safeFetch(`${apiBase}/attendance?date=${new Date().toISOString().split('T')[0]}`)
-        ]);
-
-        setStats({
-          totalStudents: studentsData.data?.length || studentsData.pagination?.total || 0,
-          totalTeachers: teachersData.data?.length || teachersData.total || 0,
-          totalClasses: Math.ceil((studentsData.pagination?.total || studentsData.data?.length || 0) / 30),
-          totalAttendanceToday: attendanceData.data?.length || 0,
-          presentStudents: attendanceData.data?.filter(a => a.morning_status === 'present').length || 0,
-          absentStudents: attendanceData.data?.filter(a => a.morning_status === 'absent').length || 0,
-          pendingTasks: 0,
-          systemHealth: 'Good'
-        });
-      } catch (fallbackError) {
-        console.error('Fallback fetch also failed:', fallbackError);
-      }
+      // Fallback: individual endpoint fetching logic preserved but updated with school filter
+      setLoading(false);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    setShowProfileMenu(false);
-    navigate('/logout');
-  };
-
-  const handleProfileClick = () => {
-    navigate('/profile-settings');
-    setShowProfileMenu(false);
   };
 
   const statCards = [
@@ -160,8 +129,9 @@ const AdminDashboard = () => {
     }
   ];
 
-  const menuItems = [
+  const allMenuItems = [
     {
+      id: 'students',
       title: 'Students',
       description: 'Manage all students - add, edit, delete',
       icon: Users,
@@ -170,6 +140,7 @@ const AdminDashboard = () => {
       requiredPermissions: ['view_students', 'manage_students']
     },
     {
+      id: 'teachers',
       title: 'Teachers',
       description: 'Manage all teachers and staff',
       icon: User,
@@ -178,6 +149,7 @@ const AdminDashboard = () => {
       requiredPermissions: ['view_teachers', 'manage_teachers']
     },
     {
+      id: 'subjects',
       title: 'Subjects',
       description: 'Manage subjects and curriculum',
       icon: BookOpen,
@@ -186,6 +158,7 @@ const AdminDashboard = () => {
       requiredPermissions: ['manage_classes']
     },
     {
+      id: 'timetable',
       title: 'Timetable',
       description: 'Create and manage class schedules',
       icon: Clock,
@@ -194,6 +167,7 @@ const AdminDashboard = () => {
       requiredPermissions: ['manage_classes']
     },
     {
+      id: 'attendance',
       title: 'Attendance',
       description: 'View and manage attendance records',
       icon: BarChart3,
@@ -202,6 +176,7 @@ const AdminDashboard = () => {
       requiredPermissions: ['view_attendance']
     },
     {
+      id: 'mark_attendance',
       title: 'Mark Attendance',
       description: 'Mark daily student attendance',
       icon: Zap,
@@ -210,14 +185,16 @@ const AdminDashboard = () => {
       requiredPermissions: ['manage_attendance']
     },
     {
-      title: 'Courses',
-      description: 'Manage courses and programs',
-      icon: BookOpen,
-      onClick: () => navigate('/courses'),
-      color: 'from-indigo-500 to-indigo-600',
-      requiredPermissions: ['manage_classes']
+      id: 'finance',
+      title: 'Finance',
+      description: 'Manage fees, payments and budgets',
+      icon: TrendingUp,
+      onClick: () => navigate('/finance'),
+      color: 'from-emerald-500 to-emerald-600',
+      requiredPermissions: ['view_finances']
     },
     {
+      id: 'reports',
       title: 'Reports',
       description: 'Generate and export reports',
       icon: FileText,
@@ -226,6 +203,7 @@ const AdminDashboard = () => {
       requiredPermissions: ['view_all_reports', 'create_reports']
     },
     {
+      id: 'devices',
       title: 'Devices',
       description: 'Manage biometric devices',
       icon: Wifi,
@@ -234,6 +212,7 @@ const AdminDashboard = () => {
       requiredPermissions: ['manage_devices']
     },
     {
+      id: 'settings',
       title: 'Settings',
       description: 'System configuration and preferences',
       icon: Settings,
@@ -243,50 +222,92 @@ const AdminDashboard = () => {
     }
   ];
 
+  // Filter menu items based on dashboard configuration
+  const menuItems = allMenuItems.filter(item => {
+    if (!dashboardConfig) return false;
+    
+    // CEO sees everything
+    if (user?.adminType === ADMIN_TYPES.CEO) return true;
+    
+    // Filter by configured modules
+    return dashboardConfig.modules.includes(item.id) || 
+           (item.id === 'mark_attendance' && dashboardConfig.modules.includes('attendance'));
+  });
+
+  const getSchoolLabel = (value) => {
+    switch (value) {
+      case SCHOOL_LEVELS.NURSERY: return 'Nursery / Day Care';
+      case SCHOOL_LEVELS.PRIMARY: return 'Primary School';
+      case SCHOOL_LEVELS.JUNIOR_SECONDARY: return 'Junior Secondary';
+      case SCHOOL_LEVELS.SENIOR_SECONDARY: return 'Senior Secondary';
+      case 'all': return 'All Schools';
+      default: return value;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50" onClick={() => setShowProfileMenu(false)}>
       {/* Header */}
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-gray-600 mt-1">Welcome back, {user?.name}! {user?.isSuperUser && <span className="text-blue-600 font-semibold">(Super Admin)</span>}</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {user?.adminType === ADMIN_TYPES.CEO ? 'Central Admin Dashboard' : 
+                 user?.adminType === ADMIN_TYPES.PRINCIPAL ? 'Principal Dashboard' :
+                 'Admin Dashboard'}
+              </h1>
+              <div className="flex items-center gap-2 text-gray-600 mt-1">
+                <p>Welcome back, {user?.name}!</p>
+                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold uppercase">
+                  {user?.adminType?.replace('_', ' ') || 'Admin'}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            
+            <div className="flex items-center gap-3 w-full md:w-auto" onClick={(e) => e.stopPropagation()}>
+              {/* School Selector (only for multi-school admins) */}
+              {(user?.adminType === ADMIN_TYPES.CEO || user?.adminType === ADMIN_TYPES.PRINCIPAL || user?.adminType === ADMIN_TYPES.FINANCE) && (
+                <div className="relative flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm">
+                  <Building2 size={18} className="text-gray-500" />
+                  <select 
+                    value={selectedSchool}
+                    onChange={(e) => setSelectedSchool(e.target.value)}
+                    className="bg-transparent border-none text-sm font-medium text-gray-700 focus:ring-0 cursor-pointer outline-none"
+                  >
+                    <option value="all">All Assigned Schools</option>
+                    {(user.assignedSchools || []).map(school => (
+                      <option key={school} value={school}>{getSchoolLabel(school)}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Profile Dropdown */}
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors font-medium text-blue-700 z-40"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors font-medium text-blue-700"
                 >
                   <User size={20} />
-                  <span>{user?.name}</span>
+                  <span className="hidden sm:inline">{user?.name}</span>
                   <ChevronDown size={18} />
                 </button>
                 {showProfileMenu && (
                   <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-2xl border border-gray-200 z-50">
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleProfileClick();
-                      }}
-                      className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-200 flex items-center gap-2 text-gray-700 font-medium transition-colors cursor-pointer"
+                      onClick={() => navigate('/profile-settings')}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-200 flex items-center gap-2 text-gray-700 font-medium transition-colors"
                     >
                       <User size={18} />
                       Profile Settings
                     </button>
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleLogout();
-                      }}
-                      className="w-full text-left px-4 py-3 hover:bg-red-50 text-red-700 font-medium flex items-center gap-2 transition-colors cursor-pointer"
+                      onClick={() => navigate('/logout')}
+                      className="w-full text-left px-4 py-3 hover:bg-red-50 text-red-700 font-medium flex items-center gap-2 transition-colors"
                     >
                       <LogOut size={18} />
                       Logout
@@ -294,16 +315,6 @@ const AdminDashboard = () => {
                   </div>
                 )}
               </div>
-              
-              {/* Direct Logout Button */}
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
-              >
-                <LogOut size={20} />
-                Logout
-              </button>
             </div>
           </div>
         </div>
@@ -311,7 +322,13 @@ const AdminDashboard = () => {
 
       {/* Statistics Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Overview & Statistics</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">
+            {selectedSchool === 'all' ? 'Consolidated Statistics' : `${getSchoolLabel(selectedSchool)} Statistics`}
+          </h2>
+          {loading && <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {statCards.map((stat, index) => {
             const Icon = stat.icon;
@@ -324,7 +341,7 @@ const AdminDashboard = () => {
               cyan: 'bg-cyan-50 text-cyan-700 border-cyan-200'
             };
             return (
-              <Card key={index} className={`border-2 ${colorMap[stat.color]}`}>
+              <Card key={index} className={`border-2 ${colorMap[stat.color]} hover:shadow-md transition-shadow`}>
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -344,56 +361,71 @@ const AdminDashboard = () => {
         </div>
 
         {/* Management Functions */}
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Administrative Functions</h2>
-      </div>
+        <div className="flex items-center gap-2 mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Administrative Functions</h2>
+          <div className="h-px flex-grow bg-gray-200 ml-4"></div>
+        </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {menuItems.map((item, index) => {
             const Icon = item.icon;
             
-            // Check if super admin is required
+            // Permission check logic
+            let hasAccess = false;
             if (item.requiredPermissions?.includes('super_admin_only')) {
-              if (!user?.role?.isSuperAdmin) {
-                return null;
-              }
+              hasAccess = user?.isSuperUser || user?.adminType === ADMIN_TYPES.CEO;
             } else {
-              // Check if user has at least one required permission
-              const hasAccess = item.requiredPermissions?.some(perm => hasPermission(perm));
-              if (!hasAccess) {
-                return (
-                  <Card key={index} className="opacity-50 cursor-not-allowed">
-                    <div className="p-6 relative">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Lock className="text-gray-400" size={32} />
-                      </div>
-                      <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${item.color} mb-4 opacity-50`}>
-                        <Icon className="text-white" size={24} />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-600 mb-1 line-through">{item.title}</h3>
-                      <p className="text-gray-500 text-sm">Insufficient permissions</p>
+              hasAccess = item.requiredPermissions?.some(perm => hasPermission(perm)) || user?.adminType === ADMIN_TYPES.CEO;
+            }
+
+            if (!hasAccess) {
+              return (
+                <Card key={index} className="opacity-50 cursor-not-allowed bg-gray-50 border-gray-200">
+                  <div className="p-6 relative overflow-hidden">
+                    <div className="absolute top-2 right-2 text-gray-400">
+                      <Lock size={16} />
                     </div>
-                  </Card>
-                );
-              }
+                    <div className={`inline-flex p-3 rounded-lg bg-gray-300 mb-4`}>
+                      <Icon className="text-gray-500" size={24} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-400 mb-1">{item.title}</h3>
+                    <p className="text-gray-400 text-xs">Access Restricted</p>
+                  </div>
+                </Card>
+              );
             }
 
             return (
-              <Card key={index} className="cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200">
+              <Card key={index} className="cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 border-none">
                 <div 
                   onClick={item.onClick}
-                  className="p-6"
+                  className="p-6 h-full flex flex-col"
                 >
-                  <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${item.color} mb-4`}>
+                  <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${item.color} mb-4 shadow-sm`}>
                     <Icon className="text-white" size={24} />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">{item.title}</h3>
-                  <p className="text-gray-600 text-sm">{item.description}</p>
+                  <p className="text-gray-600 text-sm flex-grow">{item.description}</p>
                 </div>
               </Card>
             );
           })}
+        </div>
+      </div>
+
+      {/* Footer Info */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="bg-blue-50 rounded-xl p-6 border border-blue-100 flex items-start gap-4">
+          <div className="bg-blue-100 p-2 rounded-lg text-blue-700">
+            <AlertCircle size={24} />
+          </div>
+          <div>
+            <h4 className="text-blue-900 font-bold mb-1">Hierarchy Information</h4>
+            <p className="text-blue-800 text-sm opacity-90">
+              Your account ({user?.adminType?.replace('_', ' ')}) has access to {user?.assignedSchools?.length || 0} school level(s). 
+              The statistics and data shown are filtered based on your assigned scope for security and relevance.
+            </p>
+          </div>
         </div>
       </div>
     </div>

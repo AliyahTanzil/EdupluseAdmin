@@ -9,18 +9,34 @@ const {
   deleteStudent 
 } = require('../database/local');
 const SyncService = require('../services/syncService');
+const { requirePermission, requireSchoolFilter } = require('../middleware/permissions');
 
 // Get all students
-router.get('/', (req, res) => {
+router.get('/', requireSchoolFilter, (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
     const offset = parseInt(req.query.offset) || 0;
+    const schoolId = req.query.school_id;
+    const schoolFilter = req.schoolFilter; // Array of allowed school IDs
 
-    const students = getAllStudents(limit, offset);
-    
-    // B-13 fix: Get actual total count from database
+    let students;
+    let totalCount;
     const { db } = require('../database/local');
-    const totalResult = db.prepare('SELECT COUNT(*) as total FROM students WHERE is_deleted = 0').get();
+
+    if (schoolId) {
+      students = getAllStudents(limit, offset, schoolId);
+      totalCount = db.prepare('SELECT COUNT(*) as total FROM students WHERE school_id = ? AND is_deleted = 0').get(schoolId).total;
+    } else if (schoolFilter && Array.isArray(schoolFilter) && schoolFilter.length > 0) {
+      // Filter by multiple schools (e.g. for Principal)
+      const placeholders = schoolFilter.map(() => '?').join(',');
+      students = db.prepare(`SELECT * FROM students WHERE school_id IN (${placeholders}) AND is_deleted = 0 LIMIT ? OFFSET ?`)
+        .all(...schoolFilter, limit, offset);
+      totalCount = db.prepare(`SELECT COUNT(*) as total FROM students WHERE school_id IN (${placeholders}) AND is_deleted = 0`)
+        .get(...schoolFilter).total;
+    } else {
+      students = getAllStudents(limit, offset);
+      totalCount = db.prepare('SELECT COUNT(*) as total FROM students WHERE is_deleted = 0').get().total;
+    }
 
     res.json({
       success: true,
@@ -28,7 +44,7 @@ router.get('/', (req, res) => {
       pagination: {
         limit,
         offset,
-        total: totalResult.total
+        total: totalCount
       }
     });
   } catch (error) {
@@ -40,7 +56,7 @@ router.get('/', (req, res) => {
 });
 
 // Get single student
-router.get('/:id', (req, res) => {
+router.get('/:id', requireSchoolFilter, (req, res) => {
   try {
     const student = getStudent(req.params.id);
 
@@ -48,6 +64,15 @@ router.get('/:id', (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Student not found'
+      });
+    }
+
+    // Security check: Ensure student belongs to user's assigned schools
+    const schoolFilter = req.schoolFilter;
+    if (schoolFilter && !schoolFilter.includes(student.school_id) && !req.user.isSuperUser && req.user.adminType !== 'ceo') {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: You do not have access to this student data'
       });
     }
 
@@ -64,10 +89,10 @@ router.get('/:id', (req, res) => {
 });
 
 // Create new student
-router.post('/', (req, res) => {
+router.post('/', requirePermission('manage_students'), requireSchoolFilter, (req, res) => {
   try {
     const studentId = uuidv4();
-    const { name, roll, class: studentClass, email, phone, parent_phone, address, date_of_birth, photo_url } = req.body;
+    const { name, roll, class: studentClass, school_id, email, phone, parent_phone, address, date_of_birth, photo_url } = req.body;
 
     if (!name || !roll || !studentClass) {
       return res.status(400).json({
@@ -76,11 +101,15 @@ router.post('/', (req, res) => {
       });
     }
 
+    // Enforce school_id from middleware if not provided or to override
+    const finalSchoolId = school_id || req.query.school_id;
+
     const student = {
       id: studentId,
       name,
       roll,
       class: studentClass,
+      school_id: finalSchoolId,
       email,
       phone,
       parent_phone,

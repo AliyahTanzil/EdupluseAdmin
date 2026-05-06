@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '../components/Shared';
-import { ArrowLeft, Loader } from 'lucide-react';
+import { ArrowLeft, Loader, Building2 } from 'lucide-react';
 import { studentsAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { ADMIN_TYPES, SCHOOL_LEVELS } from '../config/schoolHierarchy';
 import ErrorAlert from '../components/Shared/ErrorAlert';
 import SuccessAlert from '../components/Shared/SuccessAlert';
 import { SchoolHierarchySelector } from '../utils/schoolStructure.jsx';
 
 const AddNewStudent = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -20,6 +23,7 @@ const AddNewStudent = () => {
     parent_phone: '',
     address: '',
     date_of_birth: '',
+    school_id: '', // New mandatory field
     // New school hierarchy fields
     schoolLevel: '',
     section: '',
@@ -27,6 +31,19 @@ const AddNewStudent = () => {
     stream: '',
     rollNumber: ''
   });
+
+  // Initialize school_id based on user assignments
+  useEffect(() => {
+    if (user) {
+      const isMultiSchool = user.adminType === ADMIN_TYPES.CEO || 
+                          user.adminType === ADMIN_TYPES.PRINCIPAL || 
+                          user.adminType === ADMIN_TYPES.FINANCE;
+      
+      if (!isMultiSchool && user.assignedSchools?.length > 0) {
+        setFormData(prev => ({ ...prev, school_id: user.assignedSchools[0] }));
+      }
+    }
+  }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -77,8 +94,8 @@ const AddNewStudent = () => {
       setError(null);
 
       // Validate required fields
-      if (!formData.name || !formData.email || !formData.phone || !formData.schoolLevel || !formData.section || !formData.classSelected) {
-        setError('Please fill all required fields including school hierarchy');
+      if (!formData.name || !formData.email || !formData.phone || !formData.schoolLevel || !formData.section || !formData.classSelected || !formData.school_id) {
+        setError('Please fill all required fields including school assignment');
         setLoading(false);
         return;
       }
@@ -88,33 +105,18 @@ const AddNewStudent = () => {
         name: formData.name,
         roll: formData.rollNumber,           // Backend expects "roll"
         class: formData.classSelected,       // Backend expects "class"
+        school_id: formData.school_id,       // NEW: pass school_id to backend
         email: formData.email,
         phone: formData.phone,
         parent_phone: formData.parent_phone,
         address: formData.address,
         date_of_birth: formData.date_of_birth
-        // Note: schoolLevel, section, stream are NOT used by backend student route
-        // They are for frontend UI hierarchy only
       };
 
       const response = await studentsAPI.create(studentData);
       
       if (response.success) {
         setSuccess(true);
-        setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          parent_phone: '',
-          address: '',
-          date_of_birth: '',
-          schoolLevel: '',
-          section: '',
-          classSelected: '',
-          stream: '',
-          rollNumber: ''
-        });
-        
         setTimeout(() => {
           navigate('/students');
         }, 1500);
@@ -127,6 +129,20 @@ const AddNewStudent = () => {
       setLoading(false);
     }
   };
+
+  const getSchoolLabel = (value) => {
+    switch (value) {
+      case SCHOOL_LEVELS.NURSERY: return 'Nursery / Day Care';
+      case SCHOOL_LEVELS.PRIMARY: return 'Primary School';
+      case SCHOOL_LEVELS.JUNIOR_SECONDARY: return 'Junior Secondary School';
+      case SCHOOL_LEVELS.SENIOR_SECONDARY: return 'Senior Secondary School';
+      default: return value;
+    }
+  };
+
+  const isMultiSchoolAdmin = user?.adminType === ADMIN_TYPES.CEO || 
+                           user?.adminType === ADMIN_TYPES.PRINCIPAL || 
+                           user?.adminType === ADMIN_TYPES.FINANCE;
 
   const handleCancel = () => {
     navigate('/students');
@@ -146,16 +162,44 @@ const AddNewStudent = () => {
 
       <div className="max-w-2xl">
         <h1 className="text-4xl font-bold text-gray-800 mb-2">Add New Student</h1>
-        <p className="text-gray-600 mb-8">Fill in the student information and school hierarchy below to create a new student record</p>
+        <p className="text-gray-600 mb-8">Register a student and assign them to a specific school and class</p>
 
         {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
         {success && <SuccessAlert message="Student created successfully! Redirecting..." onClose={() => {}} />}
 
         <Card>
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* SECTION: SCHOOL HIERARCHY */}
+            {/* SECTION: SCHOOL ASSIGNMENT */}
             <div className="border-b border-gray-200 pb-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">School Assignment</h2>
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Building2 size={20} className="text-blue-600" />
+                School Assignment
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Target School <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="school_id"
+                    value={formData.school_id}
+                    onChange={handleChange}
+                    required
+                    disabled={!isMultiSchoolAdmin || loading}
+                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!isMultiSchoolAdmin ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                  >
+                    <option value="">-- Select School --</option>
+                    {(user?.assignedSchools || []).map(school => (
+                      <option key={school} value={school}>{getSchoolLabel(school)}</option>
+                    ))}
+                  </select>
+                  {!isMultiSchoolAdmin && (
+                    <p className="mt-1 text-xs text-gray-500">Your account is restricted to a single school</p>
+                  )}
+                </div>
+              </div>
+
               <SchoolHierarchySelector
                 schoolLevel={formData.schoolLevel}
                 section={formData.section}

@@ -427,8 +427,6 @@ router.post('/login', async (req, res) => {
 
     // Return user data (without password)
     const { password: _, ...userWithoutPassword } = user;
-<<<<<<< HEAD
-=======
     const responseUser = {
       ...userWithoutPassword,
       userType,
@@ -439,13 +437,12 @@ router.post('/login', async (req, res) => {
       assignedSchools: user.assignedSchools || [],
       isSuperUser: user.isSuperUser || false
     };
->>>>>>> 041b17aa (modification)
 
     res.json({
       success: true,
       message: 'Login successful',
       token,
-      user: userWithoutPassword
+      user: responseUser
     });
   } catch (err) {
     console.error('Login error:', err);

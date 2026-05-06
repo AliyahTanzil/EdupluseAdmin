@@ -208,6 +208,94 @@ const requireUserType = (userTypes) => {
 };
 
 /**
+ * Middleware to inject and enforce school filtering based on admin type and hierarchy
+ */
+const requireSchoolFilter = (req, res, next) => {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: User not authenticated'
+      });
+    }
+
+    // 1. Super Admin / CEO - No filtering required, see everything
+    if (user.isSuperUser || user.adminType === 'ceo') {
+      return next();
+    }
+
+    // 2. Parse assigned schools if stringified
+    let assignedSchools = user.assignedSchools || [];
+    if (typeof assignedSchools === 'string') {
+      try {
+        assignedSchools = JSON.parse(assignedSchools);
+      } catch (e) {
+        assignedSchools = [];
+      }
+    }
+
+    // 3. For Principal, Regular Admin, Secretary, Finance - Filter by assigned schools
+    if (user.role === 'admin') {
+      // If user is requesting a specific school, check if they have access
+      const requestedSchoolId = req.query.school_id || req.body.school_id;
+      
+      if (requestedSchoolId) {
+        if (!assignedSchools.includes(requestedSchoolId)) {
+          return res.status(403).json({
+            success: false,
+            message: 'Forbidden: You do not have access to this school',
+            requestedSchool: requestedSchoolId,
+            assignedSchools
+          });
+        }
+      } else {
+        // If no school specified, inject the first assigned school or the whole list for filtering
+        // This helps backend routes know which schools to filter by
+        req.schoolFilter = assignedSchools;
+        
+        // If it's a GET request for a list and we have multiple schools, 
+        // the route will need to handle the array in its WHERE clause
+        if (assignedSchools.length === 1) {
+          req.query.school_id = assignedSchools[0];
+        }
+      }
+      return next();
+    }
+
+    // 4. For Teachers - Filter by their schoolType or assigned school
+    if (user.role === 'teacher') {
+      const teacherSchool = user.schoolId || user.schoolType;
+      if (teacherSchool) {
+        req.query.school_id = teacherSchool;
+        req.schoolFilter = [teacherSchool];
+      }
+      return next();
+    }
+
+    // 5. For Students/Parents - Filter by their assigned school
+    if (user.role === 'student' || user.role === 'parent') {
+      const userSchool = user.schoolId || user.schoolType;
+      if (userSchool) {
+        req.query.school_id = userSchool;
+        req.schoolFilter = [userSchool];
+      }
+      return next();
+    }
+
+    next();
+  } catch (error) {
+    console.error('School filter middleware error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal Server Error during school filtering',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Example usage in route:
  * 
  * router.post('/manage-users',
@@ -230,5 +318,6 @@ module.exports = {
   requirePermission,
   requireSuperAdmin,
   requireSchoolLevel,
-  requireUserType
+  requireUserType,
+  requireSchoolFilter
 };

@@ -79,6 +79,16 @@ export const studentAPI = {
   getStudentAttendance: (id) => apiClient.get(`/students/${id}/attendance`),
 };
 
+// Teacher APIs
+export const teacherAPI = {
+  getTeachers: (filters) => apiClient.get('/teachers', { params: filters }),
+  getTeacherById: (id) => apiClient.get(`/teachers/${id}`),
+  createTeacher: (data) => apiClient.post('/teachers', data),
+  updateTeacher: (id, data) => apiClient.put(`/teachers/${id}`, data),
+  deleteTeacher: (id) => apiClient.delete(`/teachers/${id}`),
+  getTeacherSchedule: (id) => apiClient.get(`/teachers/${id}/schedule`),
+};
+
 // Grade APIs
 export const gradeAPI = {
   getGrades: (filters) => apiClient.get('/grades', { params: filters }),
@@ -118,6 +128,12 @@ export const classAPI = {
   updateClass: (id, data) => apiClient.put(`/classes/${id}`, data),
   deleteClass: (id) => apiClient.delete(`/classes/${id}`),
   getClassStudents: (id) => apiClient.get(`/classes/${id}/students`),
+};
+
+// Timetable APIs
+export const timetableAPI = {
+  getTimetable: (classId) => apiClient.get(`/timetable/${classId}`),
+  updateTimetable: (classId, data) => apiClient.put(`/timetable/${classId}`, data),
 };
 
 // Dashboard APIs

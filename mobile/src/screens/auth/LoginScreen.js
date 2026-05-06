@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { authAPI } from '../../services/api';
 import { setAuth } from '../../redux/slices/authSlice';
 
