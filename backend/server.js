@@ -3,85 +3,21 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const dotenv = require('dotenv');
-<<<<<<< HEAD
-=======
 const path = require('path');
-<<<<<<< HEAD
->>>>>>> 041b17aa (modification)
-=======
 const rateLimit = require('express-rate-limit');
->>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
 
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-<<<<<<< HEAD
-const app = express();
-const PORT = process.env.PORT || 5000;
-
-// Middleware
-app.use(helmet());
-app.use(compression());
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Database initialization
+// ============ INITIALIZE DATABASE ============
 const { initializeLocalDB } = require('./database/local');
 const { initializeFirebase } = require('./database/firebase');
 
-// Initialize databases
 initializeLocalDB();
 initializeFirebase();
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/students', require('./routes/students'));
-app.use('/api/teachers', require('./routes/teachers'));
-app.use('/api/attendance', require('./routes/attendance'));
-app.use('/api/timetable', require('./routes/timetable'));
-app.use('/api/subjects', require('./routes/subjects'));
-app.use('/api/reports', require('./routes/reports'));
-app.use('/api/devices', require('./routes/devices'));
-app.use('/api/sync', require('./routes/sync'));
-app.use('/api/health', require('./routes/health'));
-app.use('/api/school-structure', require('./routes/schoolStructure'));
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err : {}
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
-  });
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`
-  ╔═══════════════════════════════════╗
-  ║  EduPlus Admin Backend API        ║
-  ║  Server running on port ${PORT}      ║
-  ║  Environment: ${process.env.NODE_ENV || 'development'}    ║
-  ╚═══════════════════════════════════╝
-  `);
-});
-=======
-// ============ INITIALIZE DATABASE ============
-const { initializeLocalDB } = require('./database/local');
-initializeLocalDB();
-
 const app = express();
-const PORT = process.env.BACKEND_PORT || 5001;
+const PORT = process.env.BACKEND_PORT || process.env.PORT || 5001;
 
 // ============ SECURITY MIDDLEWARE ============
 app.use(helmet());
@@ -115,7 +51,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// ============ RATE LIMITING (E-5) ============
+// ============ RATE LIMITING ============
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 500, // limit each IP to 500 requests per windowMs
@@ -195,7 +131,7 @@ app.use((req, res) => {
   });
 });
 
-// ============ ERROR HANDLER (A-11 fix: only leak stack in development) ============
+// ============ ERROR HANDLER ============
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   const isDev = process.env.NODE_ENV === 'development';
@@ -247,7 +183,7 @@ function findAvailablePort(startPort) {
     `);
   });
 
-  // ============ GRACEFUL SHUTDOWN (E-8) ============
+  // ============ GRACEFUL SHUTDOWN ============
   const gracefulShutdown = (signal) => {
     console.log(`\n${signal} received. Shutting down gracefully...`);
     server.close(() => {
@@ -271,6 +207,5 @@ function findAvailablePort(startPort) {
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 })();
->>>>>>> 041b17aa (modification)
 
 module.exports = app;

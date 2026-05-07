@@ -632,8 +632,6 @@ const deleteSubject = (id) => {
   return stmt.run(id);
 };
 
-<<<<<<< HEAD
-=======
 // Courses operations
 const getCourse = (id) => {
   const stmt = db.prepare('SELECT * FROM courses WHERE id = ? AND is_deleted = 0');
@@ -675,8 +673,6 @@ const deleteCourse = (id) => {
   const stmt = db.prepare('UPDATE courses SET is_deleted = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
   return stmt.run(id);
 };
-
->>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
 // Devices operations
 const getDevice = (id) => {
   const stmt = db.prepare('SELECT * FROM devices WHERE id = ? AND is_deleted = 0');
