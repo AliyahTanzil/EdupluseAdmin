@@ -203,9 +203,6 @@ router.post('/bulk', (req, res) => {
     res.status(201).json({
       success: true,
       data: createdRecords,
-<<<<<<< HEAD
-      count: createdRecords.length,
-=======
       created: createdRecords.length,
       updated: updatedRecords.length,
       count: createdRecords.length + updatedRecords.length,
@@ -214,7 +211,6 @@ router.post('/bulk', (req, res) => {
         section: section || null,
         stream: stream || null
       },
->>>>>>> 5469f3f1 (chore: update gitignore and remove sensitive files)
       message: 'Bulk attendance marked successfully'
     });
   } catch (error) {

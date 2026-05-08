@@ -25,7 +25,7 @@ const TeachersScreen = ({ navigation }) => {
       if (!shouldRefresh) setLoading(true);
       const params = { search: searchQuery };
       const response = await teacherAPI.getTeachers(params);
-      setTeachers(response.data.teachers || response.data);
+      setTeachers(response.data.data || response.data.teachers || response.data);
     } catch (error) {
       console.error('Error fetching teachers:', error);
       Alert.alert('Error', 'Failed to load teachers');
@@ -46,7 +46,7 @@ const TeachersScreen = ({ navigation }) => {
 
   const renderTeacherCard = ({ item }) => (
     <Card 
-      onPress={() => navigation.navigate('TeacherDetails', { teacherId: item._id })}
+      onPress={() => navigation.navigate('TeacherDetails', { teacherId: item.id })}
       style={styles.teacherCard}
     >
       <View style={styles.cardHeader}>
@@ -97,7 +97,7 @@ const TeachersScreen = ({ navigation }) => {
         <FlatList
           data={teachers}
           renderItem={renderTeacherCard}
-          keyExtractor={item => item._id}
+          keyExtractor={item => item.id}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

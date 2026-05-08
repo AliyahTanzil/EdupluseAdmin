@@ -30,14 +30,14 @@ const StudentsScreen = ({ navigation }) => {
       if (pageNum === 1) setLoading(true);
       
       const params = {
-        page: pageNum,
+        offset: (pageNum - 1) * 20,
         limit: 20,
         search: searchQuery,
-        classId: selectedClass,
+        class: selectedClass,
       };
 
       const response = await studentAPI.getStudents(params);
-      const newStudents = response.data.students || response.data; // Handle different API response structures
+      const newStudents = response.data.data || response.data.students || response.data; // Handle different API response structures
 
       if (shouldRefresh || pageNum === 1) {
         setStudents(newStudents);
@@ -59,7 +59,8 @@ const StudentsScreen = ({ navigation }) => {
   const fetchClasses = async () => {
     try {
       const response = await classAPI.getClasses();
-      setClasses(response.data.classes || response.data);
+      const classesData = response.data.data || response.data.classes || response.data;
+      setClasses(classesData);
     } catch (error) {
       console.error('Error fetching classes:', error);
     }
@@ -83,7 +84,7 @@ const StudentsScreen = ({ navigation }) => {
 
   const renderStudentCard = ({ item }) => (
     <Card 
-      onPress={() => navigation.navigate('StudentDetails', { studentId: item._id })}
+      onPress={() => navigation.navigate('StudentDetails', { studentId: item.id })}
       style={styles.studentCard}
     >
       <View style={styles.cardHeader}>
@@ -102,9 +103,9 @@ const StudentsScreen = ({ navigation }) => {
             'Actions', 
             `Manage ${item.firstName}`,
             [
-              { text: 'View', onPress: () => navigation.navigate('StudentDetails', { studentId: item._id }) },
+              { text: 'View', onPress: () => navigation.navigate('StudentDetails', { studentId: item.id }) },
               { text: 'Edit', onPress: () => navigation.navigate('EditStudent', { student: item }) },
-              { text: 'Delete', onPress: () => handleDelete(item._id), style: 'destructive' },
+              { text: 'Delete', onPress: () => handleDelete(item.id), style: 'destructive' },
               { text: 'Cancel', style: 'cancel' }
             ]
           )}
@@ -173,23 +174,23 @@ const StudentsScreen = ({ navigation }) => {
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
-          data={[{ _id: null, name: 'All' }, ...classes]}
-          keyExtractor={item => item._id || 'all'}
+          data={[{ id: null, name: 'All' }, ...classes]}
+          keyExtractor={item => item.name || 'all'}
           contentContainerStyle={styles.classFilterList}
           renderItem={({ item }) => (
             <TouchableOpacity 
               style={[
                 styles.classBadge, 
-                selectedClass === item._id && styles.selectedClassBadge
+                selectedClass === (item.name === 'All' ? null : item.name) && styles.selectedClassBadge
               ]}
               onPress={() => {
-                setSelectedClass(item._id);
+                setSelectedClass(item.name === 'All' ? null : item.name);
                 fetchStudents(1);
               }}
             >
               <Text style={[
                 styles.classBadgeText,
-                selectedClass === item._id && styles.selectedClassBadgeText
+                selectedClass === (item.name === 'All' ? null : item.name) && styles.selectedClassBadgeText
               ]}>
                 {item.name}
               </Text>
@@ -206,7 +207,7 @@ const StudentsScreen = ({ navigation }) => {
         <FlatList
           data={students}
           renderItem={renderStudentCard}
-          keyExtractor={item => item._id}
+          keyExtractor={item => item.id}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

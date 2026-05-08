@@ -6,48 +6,96 @@ const {
   getAllStudents, 
   insertStudent, 
   updateStudent, 
-  deleteStudent 
+  deleteStudent,
+  getDatabase
 } = require('../database/local');
 const SyncService = require('../services/syncService');
 const { requirePermission, requireSchoolFilter } = require('../middleware/permissions');
 
-// Get all students
+// Get all students with filtering and search
 router.get('/', requireSchoolFilter, (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 100;
-    const offset = parseInt(req.query.offset) || 0;
-    const schoolId = req.query.school_id;
-    const schoolFilter = req.schoolFilter; // Array of allowed school IDs
+    const { 
+      class: className, 
+      roll, 
+      search, 
+      limit = 100, 
+      offset = 0,
+      school_id: requestedSchoolId 
+    } = req.query;
+    
+    const schoolFilter = req.schoolFilter; // Array of allowed school IDs from middleware
+    const db = getDatabase();
 
-    let students;
-    let totalCount;
-    const { db } = require('../database/local');
+    let query = 'SELECT * FROM students WHERE is_deleted = 0';
+    let countQuery = 'SELECT COUNT(*) as total FROM students WHERE is_deleted = 0';
+    const params = [];
+    const countParams = [];
 
-    if (schoolId) {
-      students = getAllStudents(limit, offset, schoolId);
-      totalCount = db.prepare('SELECT COUNT(*) as total FROM students WHERE school_id = ? AND is_deleted = 0').get(schoolId).total;
+    // Apply school filtering
+    if (requestedSchoolId) {
+      // Check if user has access to requested school
+      if (schoolFilter && !schoolFilter.includes(requestedSchoolId) && !req.user.isSuperUser && req.user.adminType !== 'ceo') {
+        return res.status(403).json({
+          success: false,
+          message: 'Forbidden: You do not have access to this school'
+        });
+      }
+      query += ' AND school_id = ?';
+      countQuery += ' AND school_id = ?';
+      params.push(requestedSchoolId);
+      countParams.push(requestedSchoolId);
     } else if (schoolFilter && Array.isArray(schoolFilter) && schoolFilter.length > 0) {
-      // Filter by multiple schools (e.g. for Principal)
       const placeholders = schoolFilter.map(() => '?').join(',');
-      students = db.prepare(`SELECT * FROM students WHERE school_id IN (${placeholders}) AND is_deleted = 0 LIMIT ? OFFSET ?`)
-        .all(...schoolFilter, limit, offset);
-      totalCount = db.prepare(`SELECT COUNT(*) as total FROM students WHERE school_id IN (${placeholders}) AND is_deleted = 0`)
-        .get(...schoolFilter).total;
-    } else {
-      students = getAllStudents(limit, offset);
-      totalCount = db.prepare('SELECT COUNT(*) as total FROM students WHERE is_deleted = 0').get().total;
+      query += ` AND school_id IN (${placeholders})`;
+      countQuery += ` AND school_id IN (${placeholders})`;
+      params.push(...schoolFilter);
+      countParams.push(...schoolFilter);
     }
+
+    // Apply class filtering
+    if (className) {
+      query += ' AND class = ?';
+      countQuery += ' AND class = ?';
+      params.push(className);
+      countParams.push(className);
+    }
+
+    // Apply roll filtering
+    if (roll) {
+      query += ' AND roll = ?';
+      countQuery += ' AND roll = ?';
+      params.push(roll);
+      countParams.push(roll);
+    }
+
+    // Apply search (name or email)
+    if (search) {
+      query += ' AND (name LIKE ? OR email LIKE ? OR roll LIKE ?)';
+      countQuery += ' AND (name LIKE ? OR email LIKE ? OR roll LIKE ?)';
+      const searchParam = `%${search}%`;
+      params.push(searchParam, searchParam, searchParam);
+      countParams.push(searchParam, searchParam, searchParam);
+    }
+
+    // Add pagination
+    query += ' ORDER BY name ASC LIMIT ? OFFSET ?';
+    params.push(parseInt(limit), parseInt(offset));
+
+    const students = db.prepare(query).all(...params);
+    const totalCount = db.prepare(countQuery).get(...countParams).total;
 
     res.json({
       success: true,
       data: students,
       pagination: {
-        limit,
-        offset,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
         total: totalCount
       }
     });
   } catch (error) {
+    console.error('Error fetching students:', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -102,7 +150,14 @@ router.post('/', requirePermission('manage_students'), requireSchoolFilter, (req
     }
 
     // Enforce school_id from middleware if not provided or to override
-    const finalSchoolId = school_id || req.query.school_id;
+    const finalSchoolId = school_id || (req.schoolFilter?.[0]);
+
+    if (!finalSchoolId) {
+       return res.status(400).json({
+        success: false,
+        message: 'School ID is required'
+      });
+    }
 
     const student = {
       id: studentId,
@@ -137,7 +192,7 @@ router.post('/', requirePermission('manage_students'), requireSchoolFilter, (req
 });
 
 // Update student
-router.put('/:id', (req, res) => {
+router.put('/:id', requirePermission('manage_students'), (req, res) => {
   try {
     const student = getStudent(req.params.id);
 
@@ -151,6 +206,8 @@ router.put('/:id', (req, res) => {
     // B-14 fix: Use !== undefined pattern so fields can be cleared to empty
     const updates = {
       name: req.body.name !== undefined ? req.body.name : student.name,
+      roll: req.body.roll !== undefined ? req.body.roll : student.roll,
+      class: req.body.class !== undefined ? req.body.class : student.class,
       email: req.body.email !== undefined ? req.body.email : student.email,
       phone: req.body.phone !== undefined ? req.body.phone : student.phone,
       parent_phone: req.body.parent_phone !== undefined ? req.body.parent_phone : student.parent_phone,
@@ -178,7 +235,7 @@ router.put('/:id', (req, res) => {
 });
 
 // Delete student
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requirePermission('manage_students'), (req, res) => {
   try {
     const student = getStudent(req.params.id);
 
